@@ -1,0 +1,542 @@
+/* =====================================================
+   AskOut Web — Design System (Vanilla CSS)
+   ===================================================== */
+
+:root {
+    --ao-bg: #000000;
+    --ao-surface: #111111;
+    --ao-surface-2: #191919;
+    --ao-border: rgba(255, 255, 255, 0.08);
+    --ao-border-hover: rgba(255, 255, 255, 0.15);
+    --ao-text: #ffffff;
+    --ao-muted: rgba(255, 255, 255, 0.35);
+    --ao-muted-2: rgba(255, 255, 255, 0.2);
+    --ao-accent: #00FFCC;
+    /* Default, overridden by JS via --theme-accent */
+    --ao-radius-card: 20px;
+    --ao-radius-pill: 100px;
+    --ao-radius-chip: 12px;
+}
+
+/* ─── Page Wrapper ─── */
+.ao-page {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--ao-bg);
+    color: var(--ao-text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 env(safe-area-inset-bottom);
+    overflow-x: hidden;
+    transition: --theme-accent 0.3s ease;
+}
+
+.ao-container {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    padding: 0 20px 40px;
+}
+
+/* ─── Header ─── */
+.ao-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 20px 16px;
+    width: 100%;
+    max-width: 420px;
+}
+
+.ao-logo-svg {
+    flex-shrink: 0;
+}
+
+.ao-wordmark {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--ao-text);
+    text-transform: uppercase;
+}
+
+.ao-header-spacer {
+    flex: 1;
+}
+
+.ao-header-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    border-radius: var(--ao-radius-pill);
+    padding: 4px 10px;
+    text-transform: uppercase;
+    border: 1px solid var(--theme-accent);
+    color: var(--theme-accent);
+    transition: color 0.3s, border-color 0.3s;
+}
+
+/* ─── Recipient Card ─── */
+.ao-recipient-card {
+    background: var(--ao-surface);
+    border-radius: var(--ao-radius-card);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    /* Replaced via style tag for glow */
+    padding: 32px 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    min-height: 160px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    transition: border-color 0.5s ease;
+}
+
+.ao-recipient-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%);
+    pointer-events: none;
+    border-radius: var(--ao-radius-card);
+}
+
+.ao-card-prompt-default,
+.ao-card-prompt-custom {
+    font-family: 'PT Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--ao-text);
+    line-height: 1.4;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0 20px;
+}
+
+.ao-card-watermark {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    opacity: 0.2;
+    color: var(--ao-text);
+    letter-spacing: 0.5px;
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+/* ─── Input Section ─── */
+.ao-input-section {
+    animation: ao-fade-up 0.2s ease forwards;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+@keyframes ao-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ─── Textarea ─── */
+.ao-textarea-wrap {
+    position: relative;
+}
+
+.ao-textarea {
+    width: 100%;
+    min-height: 140px;
+    background: var(--ao-surface);
+    border: 1px solid var(--ao-border);
+    border-radius: 16px;
+    padding: 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    color: var(--ao-text);
+    resize: none;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+    line-height: 1.6;
+}
+
+.ao-textarea::placeholder {
+    color: var(--ao-muted);
+}
+
+.ao-textarea:focus {
+    border-color: var(--theme-accent);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.ao-textarea-hightension {
+    background: var(--ao-bg);
+    border-color: var(--theme-accent);
+}
+
+.ao-char-count {
+    position: absolute;
+    bottom: 12px;
+    right: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--ao-muted);
+}
+
+/* ─── AskOut Toggles ─── */
+.ao-askout-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ao-yesno-toggles {
+    display: flex;
+    gap: 10px;
+}
+
+.ao-yesno-btn {
+    flex: 1;
+    padding: 16px;
+    background: var(--ao-surface);
+    border: 1px solid var(--ao-border);
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--ao-text);
+    transition: all 0.2s;
+}
+
+.ao-yesno-btn.selected {
+    background: var(--theme-accent);
+    border-color: var(--theme-accent);
+    color: #000;
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Rate Chips ─── */
+.ao-rate-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ao-rate-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.ao-rate-chip {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--ao-radius-chip);
+    background: var(--ao-surface);
+    border: 1px solid var(--ao-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ao-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: unset;
+    min-width: unset;
+}
+
+.ao-rate-chip:hover:not(.selected) {
+    border-color: var(--ao-border-hover);
+    color: var(--ao-text);
+    transform: scale(1.05);
+}
+
+.ao-rate-chip.selected {
+    background: var(--theme-accent);
+    border-color: var(--theme-accent);
+    color: #000;
+    transform: scale(1.08);
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.4);
+}
+
+.ao-rate-label {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ao-muted);
+    font-weight: 500;
+}
+
+.ao-rate-label.has-selection {
+    color: var(--theme-accent);
+}
+
+/* ─── Media Stubs (Voice/Image) ─── */
+.ao-media-stub {
+    background: var(--ao-surface);
+    border: 1px dashed var(--theme-accent);
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--ao-muted);
+    cursor: pointer;
+}
+
+.ao-media-stub:hover {
+    background: var(--ao-surface-2);
+}
+
+.ao-media-stub-icon {
+    font-size: 32px;
+}
+
+
+/* ─── Submit Button ─── */
+.ao-submit-btn {
+    width: 100%;
+    padding: 18px 24px;
+    background: var(--theme-accent, var(--ao-text));
+    color: #000;
+    border: none;
+    border-radius: var(--ao-radius-pill);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: -0.3px;
+    min-height: unset;
+}
+
+.ao-submit-btn:hover:not(:disabled) {
+    transform: scale(1.01);
+    box-shadow: 0 0 24px rgba(255, 255, 255, 0.15);
+}
+
+.ao-submit-btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.ao-submit-btn:disabled,
+.ao-submit-btn.loading {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ─── How It Works ─── */
+.ao-how-wrap {
+    border: 1px solid var(--ao-border);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.ao-how-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: transparent;
+    border: none;
+    color: var(--ao-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.15s ease;
+    min-height: unset;
+    min-width: unset;
+}
+
+.ao-how-toggle:hover {
+    color: var(--ao-text);
+}
+
+.ao-how-chevron {
+    transition: transform 0.2s ease;
+    font-size: 10px;
+}
+
+.ao-how-chevron.open {
+    transform: rotate(180deg);
+}
+
+.ao-how-body {
+    display: none;
+    padding: 0 18px 16px;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ao-how-body.open {
+    display: flex;
+}
+
+.ao-how-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ao-muted);
+    line-height: 1.5;
+}
+
+.ao-how-item-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ─── Error ─── */
+.ao-error {
+    background: rgba(255, 80, 80, 0.1);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #ff8080;
+    text-align: center;
+}
+
+/* ─── Sent Page ─── */
+.ao-sent-page {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--ao-bg);
+    color: var(--ao-text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    text-align: center;
+    animation: ao-fade-in 0.4s ease forwards;
+}
+
+@keyframes ao-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.ao-sent-star {
+    font-size: 56px;
+    line-height: 1;
+    margin-bottom: 28px;
+    animation: ao-pulse-star 3s ease-in-out infinite;
+}
+
+@keyframes ao-pulse-star {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.08);
+        opacity: 0.85;
+    }
+}
+
+.ao-sent-headline {
+    font-family: 'Inter', sans-serif;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin: 0 0 12px;
+    max-width: 320px;
+}
+
+.ao-sent-sub {
+    font-size: 15px;
+    color: var(--ao-muted);
+    margin: 0 0 36px;
+}
+
+.ao-sent-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ao-text);
+    color: #000;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    padding: 16px 28px;
+    border-radius: var(--ao-radius-pill);
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    letter-spacing: -0.2px;
+}
+
+.ao-sent-cta:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 24px rgba(255, 255, 255, 0.18);
+}
+
+.ao-sent-send-another {
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--ao-muted);
+    text-decoration: none;
+    border-bottom: 1px solid var(--ao-border);
+    padding-bottom: 2px;
+    transition: color 0.15s ease;
+    display: inline-block;
+}
+
+.ao-sent-send-another:hover {
+    color: var(--ao-text);
+}
+
+/* ─── Spinner ─── */
+.ao-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: ao-spin 0.7s linear infinite;
+    display: inline-block;
+}
+
+@keyframes ao-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
