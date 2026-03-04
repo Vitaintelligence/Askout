@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { AskoutClientConfig } from './utils';
 import './askout.css';
 
 type SignalPayloadType = 'text' | 'rating' | 'audio' | 'image' | 'askout';
@@ -68,6 +69,18 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
     const [howOpen, setHowOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    // Media Capture States
+    const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+    const [audioUrl, setAudioUrl] = useState<string | null>(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingTime, setRecordingTime] = useState(0);
+    const [imageStr, setImageStr] = useState<string | null>(null); // Base64 image
+
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const timerIntervalRef = useRef<number | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const [fomoCount, setFomoCount] = useState<string>('');
 
     useEffect(() => {
@@ -77,12 +90,107 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
         setFomoCount((Math.floor(Math.random() * 40000) + 10000).toLocaleString());
     }, [config.type]);
 
+    // ==========================================
+    // Media Handlers (Audio & Image)
+    // ==========================================
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            audioChunksRef.current = [];
+
+            mediaRecorderRef.current.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunksRef.current.push(e.data);
+            };
+
+            mediaRecorderRef.current.onstop = () => {
+                const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                setAudioBlob(blob);
+                setAudioUrl(URL.createObjectURL(blob));
+
+                // Cleanup tracks
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorderRef.current.start();
+            setIsRecording(true);
+            setRecordingTime(0);
+
+            timerIntervalRef.current = window.setInterval(() => {
+                setRecordingTime(prev => {
+                    if (prev >= 60) {
+                        stopRecording();
+                        return 60;
+                    }
+                    return prev + 1;
+                });
+            }, 1000);
+
+        } catch (err) {
+            console.error('Mic access denied:', err);
+            setError('Microphone access is required to record audio.');
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        }
+    };
+
+    const resetAudio = () => {
+        setAudioBlob(null);
+        setAudioUrl(null);
+        setRecordingTime(0);
+    };
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Ensure it's an image
+        if (!file.type.startsWith('image/')) {
+            setError('Please upload a valid image file.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const b64 = reader.result as string;
+            setImageStr(b64);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const triggerImageSelect = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
     const isSubmitDisabled = () => {
         if (isLoading) return true;
         if (config.type === 'text') return message.trim().length === 0;
         if (config.type === 'askout') return message.trim().length === 0 && !askoutYesNo;
-        if (config.type === 'rating' || (config.type === 'image' && slug === 'fit')) return rating === null;
-        return false; // For audio/image stubs, we'll let them click submit to see the 'dummy' logic or send empty.
+        if (config.type === 'rating') return rating === null;
+        if (config.type === 'image') {
+            if (slug === 'fit') return rating === null || !imageStr;
+            return !imageStr;
+        }
+        if (config.type === 'audio') return !audioBlob;
+        return false;
+    };
+
+    // Helper to convert blob to base64 for audio payload
+    const blobToBase64 = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
     };
 
     const handleSubmit = async () => {
@@ -112,10 +220,11 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                 payload = { score: rating };
             } else if (config.type === 'askout') {
                 payload = { message: message.trim(), choice: askoutYesNo };
-            } else if (config.type === 'audio') {
-                payload = { audio_url: 'https://example.com/audio-stub.mp3', duration_ms: 5000 };
-            } else if (config.type === 'image') {
-                payload = { image_url: 'https://example.com/image-stub.png', score: rating };
+            } else if (config.type === 'audio' && audioBlob) {
+                const audioB64 = await blobToBase64(audioBlob);
+                payload = { audio_url: audioB64, duration_ms: recordingTime * 1000 };
+            } else if (config.type === 'image' && imageStr) {
+                payload = { image_url: imageStr, score: rating };
             }
 
             const envSubmitUrl = process.env.NEXT_PUBLIC_ASKOUT_SUBMIT_URL;
@@ -256,8 +365,40 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                         </div>
                     )}
 
-                    {/* Rate Input (Slider for Energy, Chips for Rest) */}
-                    {(config.type === 'rating' || (config.type === 'image' && slug === 'fit')) && (
+                    {/* Image Capture / Placeholder specific for 'fit' or 'photo' */}
+                    {config.type === 'image' && (
+                        <div className="ao-image-capture-wrap">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                ref={fileInputRef}
+                                onChange={handleImageUpload}
+                                style={{ display: 'none' }}
+                            />
+
+                            {imageStr ? (
+                                <div className="ao-image-preview">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={imageStr} alt="Upload preview" className="ao-preview-img" />
+                                    <button className="ao-preview-retake" onClick={(e) => {
+                                        e.preventDefault();
+                                        setImageStr(null);
+                                    }}>
+                                        × Remove Image
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="ao-media-stub ao-media-stub-image" onClick={triggerImageSelect}>
+                                    <span className="ao-media-icon">📸</span>
+                                    <span>Tap to take a photo or upload</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Rate Input (Slider for Energy, Chips for Rest, Including Images) */}
+                    {(config.type === 'rating' || config.type === 'image') && (
                         <div className="ao-rate-wrap">
                             {slug === 'energy' ? (
                                 <div className="ao-slider-wrap">
@@ -269,6 +410,7 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                                         value={rating || 5}
                                         onChange={(e) => setRating(Number(e.target.value))}
                                         className="ao-slider"
+                                        id="askout-slider"
                                     />
                                     <div className="ao-slider-ticks">
                                         <span>1</span>
@@ -285,7 +427,7 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                                         {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                                             <button
                                                 key={n}
-                                                onClick={() => setRating(n)}
+                                                onClick={(e) => { e.preventDefault(); setRating(n); }}
                                                 className={`ao-rate-chip${rating === n ? ' selected' : ''}`}
                                                 aria-pressed={rating === n}
                                                 id={`askout-rate-${n}`}
@@ -310,19 +452,36 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                         </div>
                     )}
 
-                    {/* Audio Input Stub */}
+                    {/* Audio Placeholder & Recorder */}
                     {config.type === 'audio' && (
-                        <div className="ao-media-stub">
-                            <div className="ao-media-stub-icon">🎙️</div>
-                            <p>Tap to record (Coming soon)</p>
-                        </div>
-                    )}
-
-                    {/* Image Input Stub */}
-                    {config.type === 'image' && (
-                        <div className="ao-media-stub">
-                            <div className="ao-media-stub-icon">📸</div>
-                            <p>Tap to upload photo (Coming soon)</p>
+                        <div className="ao-audio-capture-wrap">
+                            {!audioUrl ? (
+                                <button
+                                    className={`ao-media-stub ao-media-stub-audio ${isRecording ? 'recording' : ''}`}
+                                    onMouseDown={(e) => { e.preventDefault(); startRecording(); }}
+                                    onMouseUp={(e) => { e.preventDefault(); stopRecording(); }}
+                                    onTouchStart={(e) => { e.preventDefault(); startRecording(); }}
+                                    onTouchEnd={(e) => { e.preventDefault(); stopRecording(); }}
+                                >
+                                    <span className={`ao-media-icon ${isRecording ? 'pulse' : ''}`}>
+                                        {isRecording ? '🔴' : '🎙️'}
+                                    </span>
+                                    <span className="ao-recording-time">
+                                        {isRecording ? `Recording... 0:${recordingTime.toString().padStart(2, '0')}` : 'Hold to record voice note'}
+                                    </span>
+                                </button>
+                            ) : (
+                                <div className="ao-audio-preview">
+                                    <audio controls src={audioUrl} className="ao-audio-player" />
+                                    <button className="ao-preview-retake" onClick={(e) => {
+                                        e.preventDefault();
+                                        resetAudio();
+                                    }}>
+                                        🗑️ Retake
+                                    </button>
+                                </div>
+                            )}
+                            <p className="ao-audio-hint">Max 60 seconds</p>
                         </div>
                     )}
 

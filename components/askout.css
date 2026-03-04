@@ -405,7 +405,13 @@
     font-weight: 600;
     color: var(--theme-accent);
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.1s;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.ao-media-stub:active {
+    transform: scale(0.98);
 }
 
 .ao-media-stub:hover {
@@ -415,6 +421,104 @@
 .ao-media-icon {
     font-size: 40px;
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+    transition: transform 0.2s;
+}
+
+.ao-media-stub.recording .ao-media-icon {
+    font-size: 48px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.15);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.ao-recording-time {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ff4757;
+}
+
+/* ─── Media Preview States ─── */
+.ao-image-capture-wrap,
+.ao-audio-capture-wrap {
+    width: 100%;
+}
+
+.ao-image-preview {
+    position: relative;
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--ao-bg);
+}
+
+.ao-preview-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 9/16;
+    object-fit: cover;
+}
+
+.ao-audio-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    background: var(--ao-surface);
+    padding: 24px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--theme-accent);
+}
+
+.ao-audio-player {
+    width: 100%;
+    height: 40px;
+}
+
+.ao-preview-retake {
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: background 0.2s;
+}
+
+.ao-image-preview .ao-preview-retake {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.ao-preview-retake:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.ao-audio-hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ao-muted);
+    margin-top: 8px;
 }
 
 
