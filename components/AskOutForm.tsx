@@ -36,6 +36,8 @@ const SLUG_CONFIGS: Record<string, SignalConfig> = {
     vibe: { type: 'text', prompt: "What's my vibe?", accent: '#00FFCC' },
     compliment: { type: 'text', prompt: "Give me a compliment.", accent: '#10b981' },
     song: { type: 'text', prompt: "Send a song that reminds you of me.", accent: '#8b5cf6' },
+    impression: { type: 'text', prompt: "First impression of me?", accent: '#38bdf8' },
+    'three-words': { type: 'text', prompt: "Describe me in 3 words.", accent: '#fbbf24' },
 };
 
 const DEFAULT_CONFIG: SignalConfig = {
@@ -66,10 +68,13 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
     const [howOpen, setHowOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    const [fomoCount, setFomoCount] = useState<string>('');
+
     useEffect(() => {
         if ((config.type === 'text' || config.type === 'askout') && textareaRef.current) {
             textareaRef.current.focus();
         }
+        setFomoCount((Math.floor(Math.random() * 40000) + 10000).toLocaleString());
     }, [config.type]);
 
     const isSubmitDisabled = () => {
@@ -101,22 +106,34 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
 
             let payload: any = {};
             if (config.type === 'text') {
-                payload = { message: message.trim() };
+                payload = { message: message ? message.trim() : payload }; // Keep string or mutated inputs based on type
+                if (slug === 'three-words') payload.message = message.split(',').filter(Boolean).join(' · ');
             } else if (config.type === 'rating') {
                 payload = { score: rating };
             } else if (config.type === 'askout') {
-                payload = { message: message.trim() || `Selected: ${askoutYesNo}` };
+                payload = { message: message.trim(), choice: askoutYesNo };
             } else if (config.type === 'audio') {
                 payload = { audio_url: 'https://example.com/audio-stub.mp3', duration_ms: 5000 };
             } else if (config.type === 'image') {
                 payload = { image_url: 'https://example.com/image-stub.png', score: rating };
             }
 
-            const submitUrl =
-                process.env.NEXT_PUBLIC_ASKOUT_SUBMIT_URL ??
-                `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/submit-signal`;
+            const envSubmitUrl = process.env.NEXT_PUBLIC_ASKOUT_SUBMIT_URL;
+            const envSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-            const res = await fetch(submitUrl, {
+            let submitUrl = envSubmitUrl;
+
+            if (!submitUrl && envSupabaseUrl) {
+                submitUrl = `${envSupabaseUrl}/functions/v1/submit-signal`;
+            }
+
+            // Fallback for missing env vars during local dev where the server wasn't restarted
+            if (!submitUrl || submitUrl.includes('undefined')) {
+                console.warn('Next.js environment variables are missing. Using hardcoded fallback URL for Askout submit-signal.');
+                submitUrl = 'https://wwzgscjnovpuqfvmccxp.supabase.co/functions/v1/submit-signal';
+            }
+
+            const res = await fetch(submitUrl as string, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -135,7 +152,8 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                 setError(data.error ?? 'Something went wrong. Please try again.');
                 setIsLoading(false);
             }
-        } catch {
+        } catch (err: any) {
+            console.error('Askout submit error:', err);
             setError('Failed to send. Check your connection and try again.');
             setIsLoading(false);
         }
@@ -145,12 +163,8 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
         <div className="ao-page" style={{ '--theme-accent': config.accent } as React.CSSProperties}>
             {/* Header */}
             <header className="ao-header">
-                <svg className="ao-logo-svg" width="28" height="28" viewBox="0 0 28 28" fill="none">
-                    <rect width="28" height="28" rx="8" fill="white" fillOpacity="0.08" />
-                    <path d="M14 6L20 10V18L14 22L8 18V10L14 6Z" stroke="white" strokeWidth="1.5" fill="none" />
-                    <circle cx="14" cy="14" r="2.5" fill="white" />
-                </svg>
-                <span className="ao-wordmark">AskOut</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/askout.webp" alt="AskOut" className="ao-logo-img" />
                 <div className="ao-header-spacer" />
                 <span className="ao-header-badge" style={{ color: config.accent, borderColor: config.accent, backgroundColor: 'transparent' }}>
                     {slug ? slug.toUpperCase() : 'ANONYMOUS'}
@@ -169,21 +183,43 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                 {/* Dynamic Input Section based on slug type */}
                 <div className="ao-input-section" key={config.type}>
 
-                    {/* Text Input */}
+                    {/* Text Input (Standard OR Three Words) */}
                     {(config.type === 'text') && (
-                        <div className="ao-textarea-wrap">
-                            <textarea
-                                ref={textareaRef}
-                                className="ao-textarea"
-                                placeholder={config.prompt}
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value.slice(0, 500))}
-                                rows={5}
-                                maxLength={500}
-                                id="askout-message-input"
-                            />
-                            <span className="ao-char-count">{message.length}/500</span>
-                        </div>
+                        slug === 'three-words' ? (
+                            <div className="ao-three-words-wrap">
+                                {[0, 1, 2].map((i) => (
+                                    <input
+                                        key={i}
+                                        type="text"
+                                        className="ao-three-chips-input"
+                                        placeholder={`Word ${i + 1}`}
+                                        value={message.split(',')[i] || ''}
+                                        maxLength={15}
+                                        onChange={(e) => {
+                                            const words = message.split(',');
+                                            // Ensure we always have an array of 3 parts to mutate
+                                            while (words.length < 3) words.push('');
+                                            words[i] = e.target.value.replace(/,/g, '');
+                                            setMessage(words.join(','));
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="ao-textarea-wrap">
+                                <textarea
+                                    ref={textareaRef}
+                                    className="ao-textarea"
+                                    placeholder={config.prompt}
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value.slice(0, 500))}
+                                    rows={5}
+                                    maxLength={500}
+                                    id="askout-message-input"
+                                />
+                                <span className="ao-char-count">{message.length}/500</span>
+                            </div>
+                        )
                     )}
 
                     {/* AskOut / High Tension Input */}
@@ -220,33 +256,57 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                         </div>
                     )}
 
-                    {/* Rate Input */}
+                    {/* Rate Input (Slider for Energy, Chips for Rest) */}
                     {(config.type === 'rating' || (config.type === 'image' && slug === 'fit')) && (
                         <div className="ao-rate-wrap">
-                            <div className="ao-rate-chips" role="group" aria-label="Rate 1 to 10">
-                                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                                    <button
-                                        key={n}
-                                        onClick={() => setRating(n)}
-                                        className={`ao-rate-chip${rating === n ? ' selected' : ''}`}
-                                        aria-pressed={rating === n}
-                                        id={`askout-rate-${n}`}
-                                    >
-                                        {n}
-                                    </button>
-                                ))}
-                            </div>
-                            <p className={`ao-rate-label${rating !== null ? ' has-selection' : ''}`}>
-                                {rating === null
-                                    ? 'Tap a number to rate'
-                                    : rating <= 3
-                                        ? `${rating} — Brutally honest 🥶`
-                                        : rating <= 6
-                                            ? `${rating} — Solid pick 👌`
-                                            : rating <= 8
-                                                ? `${rating} — Pretty fire 🔥`
-                                                : `${rating} — Absolute legend ✦`}
-                            </p>
+                            {slug === 'energy' ? (
+                                <div className="ao-slider-wrap">
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="10"
+                                        step="1"
+                                        value={rating || 5}
+                                        onChange={(e) => setRating(Number(e.target.value))}
+                                        className="ao-slider"
+                                    />
+                                    <div className="ao-slider-ticks">
+                                        <span>1</span>
+                                        <span>5</span>
+                                        <span>10</span>
+                                    </div>
+                                    <p className="ao-rate-label has-selection ao-energy-label">
+                                        {rating === null ? 'Slide to rate energy' : `${rating}/10 Energy`}
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="ao-rate-chips" role="group" aria-label="Rate 1 to 10">
+                                        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                                            <button
+                                                key={n}
+                                                onClick={() => setRating(n)}
+                                                className={`ao-rate-chip${rating === n ? ' selected' : ''}`}
+                                                aria-pressed={rating === n}
+                                                id={`askout-rate-${n}`}
+                                            >
+                                                {n}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className={`ao-rate-label${rating !== null ? ' has-selection' : ''}`}>
+                                        {rating === null
+                                            ? 'Tap a number to rate'
+                                            : rating <= 3
+                                                ? `${rating}/10 — Brutally honest 🥶`
+                                                : rating <= 6
+                                                    ? `${rating}/10 — Solid pick 👌`
+                                                    : rating <= 8
+                                                        ? `${rating}/10 — Pretty fire 🔥`
+                                                        : `${rating}/10 — Absolute legend ✦`}
+                                    </p>
+                                </>
+                            )}
                         </div>
                     )}
 
@@ -282,6 +342,23 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                             <>Send Anonymously 🔒</>
                         )}
                     </button>
+
+                    {/* FOMO Section */}
+                    {fomoCount && (
+                        <div className="ao-fomo-section">
+                            <span className="ao-fomo-text">
+                                🔥 {fomoCount} people just tapped the button
+                            </span>
+                            <a
+                                href="https://glowrizz.club"
+                                className="ao-fomo-cta"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Get your link now!
+                            </a>
+                        </div>
+                    )}
 
                     {/* How it works */}
                     <div className="ao-how-wrap">

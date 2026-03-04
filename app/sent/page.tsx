@@ -14,23 +14,30 @@ export default function SentPage() {
             <div className="ao-sent-star">✦</div>
 
             <h1 className="ao-sent-headline">
-                Sent. They&apos;ll never know it was you.
+                Sent.
             </h1>
 
-            <p className="ao-sent-sub">Unless they spend their Aura. 😉</p>
+            <p className="ao-sent-sub ao-sent-sub-large">
+                They'll never know it was you.
+            </p>
 
-            <a
-                href="https://apps.apple.com/app/maxify/id6741833898"
-                className="ao-sent-cta"
-                target="_blank"
-                rel="noopener noreferrer"
-                id="askout-download-cta"
-            >
-                📲 Download Maxify
-            </a>
+            <div className="ao-sent-divider" />
+
+            <div className="ao-sent-acquisition">
+                <p className="ao-acq-text">Want to know what people think about YOU?</p>
+                <a
+                    href="https://apps.apple.com/app/com.maxify.official"
+                    className="ao-sent-cta"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    id="askout-download-cta"
+                >
+                    Create your AskOut ⚡
+                </a>
+            </div>
 
             <Link href="/" className="ao-sent-send-another">
-                ← Back to Maxify
+                ← Send another message
             </Link>
         </main>
     );

@@ -21,7 +21,7 @@
 /* ─── Page Wrapper ─── */
 .ao-page {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: var(--ao-bg);
+    background: radial-gradient(circle at top center, color-mix(in srgb, var(--theme-accent) 15%, transparent), var(--ao-bg) 60%), var(--ao-bg);
     color: var(--ao-text);
     min-height: 100dvh;
     display: flex;
@@ -50,17 +50,11 @@
     max-width: 420px;
 }
 
-.ao-logo-svg {
+.ao-logo-img {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
     flex-shrink: 0;
-}
-
-.ao-wordmark {
-    font-family: 'Inter', sans-serif;
-    font-weight: 900;
-    font-size: 13px;
-    letter-spacing: 3px;
-    color: var(--ao-text);
-    text-transform: uppercase;
 }
 
 .ao-header-spacer {
@@ -290,28 +284,137 @@
     color: var(--theme-accent);
 }
 
+/* ─── Energy Slider ─── */
+.ao-slider-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0 10px;
+}
+
+.ao-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    background: var(--ao-surface);
+    border-radius: 4px;
+    outline: none;
+    border: 1px solid var(--ao-border);
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.ao-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--theme-accent);
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    border: 3px solid #000;
+    transition: transform 0.1s;
+}
+
+.ao-slider::-webkit-slider-thumb:active {
+    transform: scale(1.1);
+}
+
+.ao-slider::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--theme-accent);
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    border: 3px solid #000;
+    transition: transform 0.1s;
+}
+
+.ao-slider::-moz-range-thumb:active {
+    transform: scale(1.1);
+}
+
+.ao-slider:focus {
+    border-color: var(--theme-accent);
+}
+
+.ao-slider-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ao-muted);
+    font-family: 'Inter', sans-serif;
+    padding: 0 4px;
+}
+
+.ao-energy-label {
+    margin-top: -4px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* ─── Three Words Chips ─── */
+.ao-three-words-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ao-three-chips-input {
+    width: 100%;
+    background: var(--ao-surface);
+    border: 1px solid var(--ao-border);
+    border-radius: 12px;
+    padding: 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ao-text);
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ao-three-chips-input::placeholder {
+    color: var(--ao-muted);
+    font-weight: 400;
+}
+
+.ao-three-chips-input:focus {
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 5%, var(--ao-surface));
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
 /* ─── Media Stubs (Voice/Image) ─── */
 .ao-media-stub {
     background: var(--ao-surface);
     border: 1px dashed var(--theme-accent);
     border-radius: 16px;
-    padding: 32px;
+    padding: 40px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 16px;
     text-align: center;
     font-size: 14px;
-    color: var(--ao-muted);
+    font-weight: 600;
+    color: var(--theme-accent);
     cursor: pointer;
+    transition: background 0.2s;
 }
 
 .ao-media-stub:hover {
-    background: var(--ao-surface-2);
+    background: color-mix(in srgb, var(--theme-accent) 5%, var(--ao-surface));
 }
 
-.ao-media-stub-icon {
-    font-size: 32px;
+.ao-media-icon {
+    font-size: 40px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
 }
 
 
@@ -488,6 +591,36 @@
     margin: 0 0 36px;
 }
 
+.ao-sent-sub-large {
+    font-size: 16px;
+    font-weight: 500;
+    max-width: 250px;
+}
+
+.ao-sent-divider {
+    width: 60px;
+    height: 1px;
+    background: var(--ao-border);
+    margin: 0 0 36px;
+}
+
+.ao-sent-acquisition {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.ao-acq-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--theme-accent, var(--ao-accent));
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
 .ao-sent-cta {
     display: inline-flex;
     align-items: center;
@@ -495,18 +628,28 @@
     background: var(--ao-text);
     color: #000;
     font-family: 'Inter', sans-serif;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 800;
-    padding: 16px 28px;
+    padding: 18px 32px;
     border-radius: var(--ao-radius-pill);
     text-decoration: none;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s;
     letter-spacing: -0.2px;
+}
+
+.ao-sent-cta-primary {
+    background: var(--theme-accent, var(--ao-accent));
+    color: #000;
 }
 
 .ao-sent-cta:hover {
     transform: scale(1.02);
     box-shadow: 0 0 24px rgba(255, 255, 255, 0.18);
+    background: #fff;
+}
+
+.ao-sent-cta-primary:hover {
+    background: color-mix(in srgb, var(--theme-accent, var(--ao-accent)) 85%, #fff);
 }
 
 .ao-sent-send-another {
@@ -539,4 +682,46 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+/* ─── FOMO UI ─── */
+.ao-fomo-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    animation: ao-fade-up 0.5s ease forwards;
+}
+
+.ao-fomo-text {
+    font-size: 13px;
+    color: var(--ao-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+}
+
+.ao-fomo-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--theme-accent);
+    color: var(--theme-accent);
+    padding: 16px 24px;
+    border-radius: var(--ao-radius-pill);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    width: 100%;
+    letter-spacing: -0.2px;
+}
+
+.ao-fomo-cta:hover {
+    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
+    transform: scale(1.02);
 }
