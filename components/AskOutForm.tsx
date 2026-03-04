@@ -87,8 +87,8 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
         if ((config.type === 'text' || config.type === 'askout') && textareaRef.current) {
             textareaRef.current.focus();
         }
-        // Reduced FOMO to a more realistic 45 - 65 range as requested
-        setFomoCount((Math.floor(Math.random() * 20) + 45).toString());
+        // Reduced FOMO to a more realistic 50 - 60 range as requested
+        setFomoCount((Math.floor(Math.random() * 11) + 50).toString());
     }, [config.type]);
 
     // ==========================================
@@ -537,7 +537,7 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                     {fomoCount && (
                         <div className="ao-fomo-section">
                             <span className="ao-fomo-text">
-                                🔥 {fomoCount} people just tapped the button
+                                🔥 {fomoCount} users tapped the button
                             </span>
                             <a
                                 href="https://glowrizz.club"
