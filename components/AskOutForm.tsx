@@ -87,7 +87,8 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
         if ((config.type === 'text' || config.type === 'askout') && textareaRef.current) {
             textareaRef.current.focus();
         }
-        setFomoCount((Math.floor(Math.random() * 40000) + 10000).toLocaleString());
+        // Reduced FOMO to a more realistic 45 - 65 range as requested
+        setFomoCount((Math.floor(Math.random() * 20) + 45).toString());
     }, [config.type]);
 
     // ==========================================
