@@ -227,6 +227,34 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                 payload = { image_url: imageStr, score: rating };
             }
 
+            // -- Device & Location Info (Aura Hints) --
+            let locationData: { lat: number, lng: number } | null = null;
+            let clientHint = 'desktop user';
+
+            try {
+                // Determine explicit device
+                const ua = navigator.userAgent || '';
+                const platform = navigator.platform || '';
+
+                if (/iphone|ipad|ipod/i.test(ua)) clientHint = 'iPhone user';
+                else if (/android/i.test(ua)) clientHint = 'Android user';
+                else if (/mac/i.test(platform)) clientHint = 'Mac user';
+                else if (/win/i.test(platform)) clientHint = 'Windows user';
+
+                // Try to get location with 4s timeout so we don't block forever
+                if (navigator.geolocation) {
+                    locationData = await new Promise((resolve) => {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                            () => resolve(null), // On reject (denied/timeout), just proceed without it
+                            { timeout: 4000, maximumAge: 60000 }
+                        );
+                    });
+                }
+            } catch (err) {
+                console.warn("Failed to capture explicit device info", err);
+            }
+
             const envSubmitUrl = process.env.NEXT_PUBLIC_ASKOUT_SUBMIT_URL;
             const envSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -250,6 +278,8 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                     type: config.type,
                     payload,
                     fingerprint,
+                    client_hint: clientHint,
+                    location: locationData
                 }),
             });
 
