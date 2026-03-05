@@ -847,3 +847,118 @@
     background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
     transform: scale(1.04);
 }
+
+/* ─── Upload Progress ─── */
+.ao-upload-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ao-muted);
+    font-weight: 600;
+    justify-content: center;
+}
+
+/* ─── Ghost Text Overlay ─── */
+/*
+   Sits on top of the textarea (pointer-events: none), mimics the same
+   padding/font so it lines up exactly. Cycles through example messages
+   to give the sender ideas without forcing anything.
+*/
+.ao-textarea-wrap {
+    position: relative;
+}
+
+.ao-ghost-text {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    right: 40px; /* leave room for char count */
+    pointer-events: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.18);
+    white-space: pre-wrap;
+    word-break: break-word;
+    transition: opacity 0.35s ease;
+    user-select: none;
+    z-index: 1;
+}
+
+.ao-ghost-visible {
+    opacity: 1;
+}
+
+.ao-ghost-hidden {
+    opacity: 0;
+}
+
+/* ─── Suggestion Chips ─── */
+.ao-suggestions-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    /* Negative margin so chips feel flush with the textarea */
+    margin-top: -4px;
+}
+
+.ao-suggestions-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--ao-muted-2);
+    margin: 0;
+    padding-left: 2px;
+}
+
+.ao-suggestions-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    /* Hide scrollbar but keep scrollability */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.ao-suggestions-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.ao-suggestion-chip {
+    /* Translucent glass pill */
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: var(--ao-radius-pill);
+    padding: 9px 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    min-height: unset;
+    min-width: unset;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+
+.ao-suggestion-chip:hover {
+    background: color-mix(in srgb, var(--theme-accent) 12%, rgba(255, 255, 255, 0.07));
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.ao-suggestion-chip:active {
+    transform: scale(0.97);
+    background: color-mix(in srgb, var(--theme-accent) 20%, rgba(255, 255, 255, 0.1));
+    color: #fff;
+}
