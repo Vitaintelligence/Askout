@@ -338,6 +338,25 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
 
     const [fomoCount, setFomoCount] = useState<string>('');
 
+    // 🔥 Ghost Mode State
+    const [isGhostMode, setIsGhostMode] = useState<boolean>(false);
+    const [isLoadingGhost, setIsLoadingGhost] = useState<boolean>(true);
+
+    useEffect(() => {
+        async function fetchGhostStatus() {
+            try {
+                const res = await fetch(`${getSubmitUrl()}?slug=${username}`);
+                const data = await res.json();
+                if (res.ok) setIsGhostMode(data.is_ghost_mode === true);
+            } catch {
+                // fall back to open if network issue
+            } finally {
+                setIsLoadingGhost(false);
+            }
+        }
+        fetchGhostStatus();
+    }, [username]);
+
     // ── Ghost text cycle ──────────────────────────────────────────────────────
     useEffect(() => {
         if ((config.type === 'text' || config.type === 'askout') && textareaRef.current) {
@@ -538,6 +557,47 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
 
     // ── Suggestion chip row (only for text/askout types) ─────────────────────
     const showSuggestions = config.type === 'text' || config.type === 'askout';
+
+    // 🔥 Ghost Mode Loading State
+    if (isLoadingGhost) {
+        return (
+            <div className="ao-page" style={{ '--theme-accent': config.accent } as React.CSSProperties}>
+                <div className="ao-container">
+                    <div className="ao-ngl-card" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span className="ao-spinner" style={{ width: 24, height: 24, borderWidth: 3 }} />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 🔥 Ghost Mode Locked State
+    if (isGhostMode) {
+        return (
+            <div className="ao-page" style={{ '--theme-accent': '#555' } as React.CSSProperties}>
+                <div className="ao-container">
+                    <div className="ao-ngl-card">
+                        <div className="ao-ngl-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+                            <div className="ao-ngl-avatar" style={{ background: '#222', color: '#555' }}>
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3Zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22Z" clipRule="evenodd" /></svg>
+                            </div>
+                            <div className="ao-ngl-header-text">
+                                <span className="ao-ngl-username" style={{ color: '#888' }}>@{username}</span>
+                                <span className="ao-ngl-prompt" style={{ color: '#555' }}>Arena Closed</span>
+                            </div>
+                        </div>
+                        <div className="ao-ngl-body" style={{ background: '#111', padding: '48px 20px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
+                            <h2 style={{ color: 'white', fontSize: '22px', fontWeight: 900, marginBottom: '8px' }}>The Arena has been closed.</h2>
+                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '15px', lineHeight: 1.5 }}>
+                                {username} has gone dark.<br />Check back later.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="ao-page" style={{ '--theme-accent': config.accent } as React.CSSProperties}>
