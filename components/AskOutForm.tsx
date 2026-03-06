@@ -541,225 +541,257 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
 
     return (
         <div className="ao-page" style={{ '--theme-accent': config.accent } as React.CSSProperties}>
-            <header className="ao-header">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/askout.webp" alt="AskOut" className="ao-logo-img" />
-                <div className="ao-header-spacer" />
-                <span className="ao-header-badge" style={{ color: config.accent, borderColor: config.accent, backgroundColor: 'transparent' }}>
-                    {slug ? slug.toUpperCase() : 'ANONYMOUS'}
-                </span>
-            </header>
-
             <div className="ao-container">
-                <div className="ao-recipient-card" style={{ borderColor: 'var(--theme-accent)' }}>
-                    <p className={promptText ? "ao-card-prompt-custom" : "ao-card-prompt-default"}>
-                        {promptText || config.prompt}
-                    </p>
-                    <span className="ao-card-watermark">askout.link/{username}{slug ? `/${slug}` : ''}</span>
-                </div>
 
-                <div className="ao-input-section" key={config.type}>
-
-                    {/* ── Text Input ── */}
-                    {config.type === 'text' && (
-                        slug === 'three-words' ? (
-                            <div className="ao-three-words-wrap">
-                                {[0, 1, 2].map((i) => (
-                                    <input
-                                        key={i}
-                                        type="text"
-                                        className="ao-three-chips-input"
-                                        placeholder={`Word ${i + 1}`}
-                                        value={message.split(',')[i] || ''}
-                                        maxLength={15}
-                                        onChange={(e) => {
-                                            const words = message.split(',');
-                                            while (words.length < 3) words.push('');
-                                            words[i] = e.target.value.replace(/,/g, '');
-                                            setMessage(words.join(','));
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="ao-textarea-wrap">
-                                {/* Ghost text overlay — fades when user starts typing */}
-                                {message.length === 0 && (
-                                    <div
-                                        className={`ao-ghost-text ${ghostVisible ? 'ao-ghost-visible' : 'ao-ghost-hidden'}`}
-                                        aria-hidden="true"
-                                    >
-                                        {ghostTexts[ghostIndex]}
-                                    </div>
-                                )}
-                                <textarea
-                                    ref={textareaRef}
-                                    className="ao-textarea"
-                                    placeholder=""
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value.slice(0, 500))}
-                                    rows={5}
-                                    maxLength={500}
-                                    id="askout-message-input"
-                                />
-                                <span className="ao-char-count">{message.length}/500</span>
-                            </div>
-                        )
-                    )}
-
-                    {/* ── AskOut / High Tension ── */}
-                    {config.type === 'askout' && (
-                        <div className="ao-askout-wrap">
-                            {slug === 'askout' && (
-                                <div className="ao-yesno-toggles">
-                                    <button className={`ao-yesno-btn ${askoutYesNo === 'yes' ? 'selected' : ''}`} onClick={() => setAskoutYesNo('yes')}>Yes</button>
-                                    <button className={`ao-yesno-btn ${askoutYesNo === 'no' ? 'selected' : ''}`} onClick={() => setAskoutYesNo('no')}>No</button>
-                                </div>
-                            )}
-                            <div className="ao-textarea-wrap">
-                                {message.length === 0 && (
-                                    <div
-                                        className={`ao-ghost-text ${ghostVisible ? 'ao-ghost-visible' : 'ao-ghost-hidden'}`}
-                                        aria-hidden="true"
-                                    >
-                                        {ghostTexts[ghostIndex]}
-                                    </div>
-                                )}
-                                <textarea
-                                    ref={textareaRef}
-                                    className="ao-textarea ao-textarea-hightension"
-                                    placeholder=""
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value.slice(0, 500))}
-                                    rows={4}
-                                    maxLength={500}
-                                />
-                            </div>
+                {/* ── NGL-Style Unified Card ── */}
+                <div className="ao-ngl-card">
+                    {/* Top Header: White Background */}
+                    <div className="ao-ngl-header">
+                        <div className="ao-ngl-avatar">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path fillRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3Zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22Z" clipRule="evenodd" />
+                            </svg>
                         </div>
-                    )}
-
-                    {/* ── Suggestion chips — shown for text + askout types ── */}
-                    {showSuggestions && message.length === 0 && slug !== 'three-words' && (
-                        <div className="ao-suggestions-wrap" aria-label="Suggestion chips">
-                            <p className="ao-suggestions-label">tap to use →</p>
-                            <div className="ao-suggestions-scroll">
-                                {suggestions.map((s, i) => (
-                                    <button
-                                        key={i}
-                                        className="ao-suggestion-chip"
-                                        onClick={() => applySuggestion(s)}
-                                        type="button"
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
-                            </div>
+                        <div className="ao-ngl-header-text">
+                            <span className="ao-ngl-username">@{username}</span>
+                            <span className="ao-ngl-prompt">{promptText || config.prompt}</span>
                         </div>
-                    )}
+                    </div>
 
-                    {/* ── Image Capture ── */}
-                    {config.type === 'image' && (
-                        <div className="ao-image-capture-wrap">
-                            <input type="file" accept="image/*" capture="environment" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
-                            {imagePreviewUrl ? (
-                                <div className="ao-image-preview">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={imagePreviewUrl} alt="Upload preview" className="ao-preview-img" />
-                                    <button className="ao-preview-retake" onClick={(e) => { e.preventDefault(); setImageFile(null); setImagePreviewUrl(null); }}>
-                                        × Remove Image
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="ao-media-stub ao-media-stub-image" onClick={() => fileInputRef.current?.click()}>
-                                    <span className="ao-media-icon">📸</span>
-                                    <span>Tap to take a photo or upload</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    {/* Bottom Body: Gradient/Colored Area */}
+                    <div className="ao-ngl-body">
+                        <div className="ao-input-section" key={config.type}>
 
-                    {/* ── Rating chips ── */}
-                    {(config.type === 'rating' || config.type === 'image') && (
-                        <div className="ao-rate-wrap">
-                            {slug === 'energy' ? (
-                                <div className="ao-slider-wrap">
-                                    <input type="range" min="1" max="10" step="1" value={rating || 5} onChange={(e) => setRating(Number(e.target.value))} className="ao-slider" id="askout-slider" />
-                                    <div className="ao-slider-ticks"><span>1</span><span>5</span><span>10</span></div>
-                                    <p className="ao-rate-label has-selection ao-energy-label">{rating === null ? 'Slide to rate energy' : `${rating}/10 Energy`}</p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="ao-rate-chips" role="group" aria-label="Rate 1 to 10">
-                                        {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
-                                            <button key={n} onClick={(e) => { e.preventDefault(); setRating(n); }} className={`ao-rate-chip${rating === n ? ' selected' : ''}`} aria-pressed={rating === n} id={`askout-rate-${n}`}>{n}</button>
+                            {/* ── Text Input ── */}
+                            {config.type === 'text' && (
+                                slug === 'three-words' ? (
+                                    <div className="ao-three-words-wrap">
+                                        {[0, 1, 2].map((i) => (
+                                            <input
+                                                key={i}
+                                                type="text"
+                                                className="ao-ngl-three-chips-input"
+                                                placeholder={`Word ${i + 1}`}
+                                                value={message.split(',')[i] || ''}
+                                                maxLength={15}
+                                                onChange={(e) => {
+                                                    const words = message.split(',');
+                                                    while (words.length < 3) words.push('');
+                                                    words[i] = e.target.value.replace(/,/g, '');
+                                                    setMessage(words.join(','));
+                                                }}
+                                            />
                                         ))}
                                     </div>
-                                    <p className={`ao-rate-label${rating !== null ? ' has-selection' : ''}`}>
-                                        {rating === null ? 'Tap a number to rate'
-                                            : rating <= 3 ? `${rating}/10 — Brutally honest 🥶`
-                                                : rating <= 6 ? `${rating}/10 — Solid pick 👌`
-                                                    : rating <= 8 ? `${rating}/10 — Pretty fire 🔥`
-                                                        : `${rating}/10 — Absolute legend ✦`}
-                                    </p>
-                                </>
+                                ) : (
+                                    <div className="ao-ngl-textarea-wrap">
+                                        {/* Clickable Hint Overlay with Dice */}
+                                        {message.length === 0 && (
+                                            <div
+                                                className={`ao-ngl-hint-overlay ${ghostVisible ? 'ao-ghost-visible' : 'ao-ghost-hidden'}`}
+                                            >
+                                                <div
+                                                    className="ao-ngl-hint-text-click"
+                                                    onClick={() => {
+                                                        setMessage(ghostTexts[ghostIndex].replace('...', ''));
+                                                        textareaRef.current?.focus();
+                                                    }}
+                                                >
+                                                    {ghostTexts[ghostIndex]}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="ao-ngl-dice-btn"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setGhostVisible(false);
+                                                        setTimeout(() => {
+                                                            setGhostIndex((prev) => (prev + 1) % ghostTexts.length);
+                                                            setGhostVisible(true);
+                                                        }, 200);
+                                                    }}
+                                                    title="Roll for a new idea"
+                                                >
+                                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                        <rect width="18" height="18" x="3" y="3" rx="4" />
+                                                        <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+                                                        <circle cx="16" cy="8" r="1.5" fill="currentColor" />
+                                                        <circle cx="8" cy="16" r="1.5" fill="currentColor" />
+                                                        <circle cx="16" cy="16" r="1.5" fill="currentColor" />
+                                                        <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        )}
+                                        <textarea
+                                            ref={textareaRef}
+                                            className="ao-ngl-textarea"
+                                            placeholder=""
+                                            value={message}
+                                            onChange={(e) => setMessage(e.target.value.slice(0, 500))}
+                                            rows={6}
+                                            maxLength={500}
+                                            id="askout-message-input"
+                                        />
+                                    </div>
+                                )
                             )}
-                        </div>
-                    )}
 
-                    {/* ── Audio Recorder ── */}
-                    {config.type === 'audio' && (
-                        <div className="ao-audio-capture-wrap">
-                            {!audioUrl ? (
-                                <button
-                                    className={`ao-media-stub ao-media-stub-audio ${isRecording ? 'recording' : ''}`}
-                                    onMouseDown={(e) => { e.preventDefault(); startRecording(); }}
-                                    onMouseUp={(e) => { e.preventDefault(); stopRecording(); }}
-                                    onTouchStart={(e) => { e.preventDefault(); startRecording(); }}
-                                    onTouchEnd={(e) => { e.preventDefault(); stopRecording(); }}
-                                >
-                                    <span className={`ao-media-icon ${isRecording ? 'pulse' : ''}`}>{isRecording ? '🔴' : '🎙️'}</span>
-                                    <span className="ao-recording-time">{isRecording ? `Recording... 0:${recordingTime.toString().padStart(2, '0')}` : 'Hold to record voice note'}</span>
-                                </button>
-                            ) : (
-                                <div className="ao-audio-preview">
-                                    <audio controls src={audioUrl} className="ao-audio-player" />
-                                    <button className="ao-preview-retake" onClick={(e) => { e.preventDefault(); resetAudio(); }}>🗑️ Retake</button>
+                            {/* ── AskOut / High Tension ── */}
+                            {config.type === 'askout' && (
+                                <div className="ao-askout-wrap">
+                                    {slug === 'askout' && (
+                                        <div className="ao-yesno-toggles">
+                                            <button className={`ao-ngl-yesno-btn ${askoutYesNo === 'yes' ? 'selected' : ''}`} onClick={() => setAskoutYesNo('yes')}>Yes</button>
+                                            <button className={`ao-ngl-yesno-btn ${askoutYesNo === 'no' ? 'selected' : ''}`} onClick={() => setAskoutYesNo('no')}>No</button>
+                                        </div>
+                                    )}
+                                    <div className="ao-ngl-textarea-wrap">
+                                        {message.length === 0 && (
+                                            <div
+                                                className={`ao-ngl-ghost-text ${ghostVisible ? 'ao-ghost-visible' : 'ao-ghost-hidden'}`}
+                                                aria-hidden="true"
+                                            >
+                                                {ghostTexts[ghostIndex]}
+                                            </div>
+                                        )}
+                                        <textarea
+                                            ref={textareaRef}
+                                            className="ao-ngl-textarea ao-textarea-hightension"
+                                            placeholder=""
+                                            value={message}
+                                            onChange={(e) => setMessage(e.target.value.slice(0, 500))}
+                                            rows={4}
+                                            maxLength={500}
+                                        />
+                                    </div>
                                 </div>
                             )}
-                            <p className="ao-audio-hint">Max 60 seconds</p>
-                        </div>
-                    )}
 
-                    {uploadProgress && (
-                        <div className="ao-upload-progress" role="status">
-                            <span className="ao-spinner" /> {uploadProgress}
-                        </div>
-                    )}
-                    {error && <div className="ao-error" role="alert">{error}</div>}
+                            {/* ── Suggestion chips ── */}
+                            {showSuggestions && message.length === 0 && slug !== 'three-words' && (
+                                <div className="ao-ngl-suggestions-wrap" aria-label="Suggestion chips">
+                                    <div className="ao-ngl-suggestions-scroll">
+                                        {suggestions.map((s, i) => (
+                                            <button
+                                                key={i}
+                                                className="ao-ngl-suggestion-chip"
+                                                onClick={() => applySuggestion(s)}
+                                                type="button"
+                                            >
+                                                {s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
-                    <button className={`ao-submit-btn${isLoading ? ' loading' : ''}`} onClick={handleSubmit} disabled={isSubmitDisabled()} id="askout-submit">
-                        {isLoading ? (<><span className="ao-spinner" /> {uploadProgress ?? 'Sending...'}</>) : (<>Send Anonymously 🔒</>)}
-                    </button>
+                            {/* ── Image Capture ── */}
+                            {config.type === 'image' && (
+                                <div className="ao-image-capture-wrap">
+                                    <input type="file" accept="image/*" capture="environment" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
+                                    {imagePreviewUrl ? (
+                                        <div className="ao-image-preview">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={imagePreviewUrl} alt="Upload preview" className="ao-preview-img" />
+                                            <button className="ao-preview-retake" onClick={(e) => { e.preventDefault(); setImageFile(null); setImagePreviewUrl(null); }}>
+                                                × Remove Image
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="ao-ngl-media-stub" onClick={() => fileInputRef.current?.click()}>
+                                            <span className="ao-media-icon">📸</span>
+                                            <span>Tap to take a photo or upload</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                    {fomoCount && (
-                        <div className="ao-fomo-section">
-                            <span className="ao-fomo-text">🔥 {fomoCount} users tapped the button</span>
-                            <a href="https://glowrizz.club" className="ao-fomo-cta" target="_blank" rel="noopener noreferrer">Get your link now!</a>
-                        </div>
-                    )}
+                            {/* ── Rating chips ── */}
+                            {(config.type === 'rating' || config.type === 'image') && (
+                                <div className="ao-rate-wrap">
+                                    {slug === 'energy' ? (
+                                        <div className="ao-slider-wrap">
+                                            <input type="range" min="1" max="10" step="1" value={rating || 5} onChange={(e) => setRating(Number(e.target.value))} className="ao-slider" id="askout-slider" />
+                                            <div className="ao-slider-ticks"><span>1</span><span>5</span><span>10</span></div>
+                                            <p className="ao-rate-label has-selection ao-energy-label">{rating === null ? 'Slide to rate energy' : `${rating}/10 Energy`}</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="ao-rate-chips" role="group" aria-label="Rate 1 to 10">
+                                                {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+                                                    <button key={n} onClick={(e) => { e.preventDefault(); setRating(n); }} className={`ao-ngl-rate-chip${rating === n ? ' selected' : ''}`} aria-pressed={rating === n} id={`askout-rate-${n}`}>{n}</button>
+                                                ))}
+                                            </div>
+                                            <p className={`ao-rate-label${rating !== null ? ' has-selection' : ''}`}>
+                                                {rating === null ? 'Tap a number to rate'
+                                                    : rating <= 3 ? `${rating}/10 — Brutally honest 🥶`
+                                                        : rating <= 6 ? `${rating}/10 — Solid pick 👌`
+                                                            : rating <= 8 ? `${rating}/10 — Pretty fire 🔥`
+                                                                : `${rating}/10 — Absolute legend ✦`}
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            )}
 
-                    <div className="ao-how-wrap">
-                        <button className="ao-how-toggle" onClick={() => setHowOpen(v => !v)} aria-expanded={howOpen}>
-                            <span>How does this work?</span>
-                            <span className={`ao-how-chevron${howOpen ? ' open' : ''}`}>▼</span>
-                        </button>
-                        <div className={`ao-how-body${howOpen ? ' open' : ''}`}>
-                            <div className="ao-how-item"><span className="ao-how-item-icon">🔒</span><span>Fully anonymous — your name is never attached to your message.</span></div>
-                            <div className="ao-how-item"><span className="ao-how-item-icon">💎</span><span>They spend Aura to see who you are. It costs them, not you.</span></div>
-                            <div className="ao-how-item"><span className="ao-how-item-icon">✦</span><span>Your identity is never revealed directly — only through Aura spend.</span></div>
+                            {/* ── Audio Recorder ── */}
+                            {config.type === 'audio' && (
+                                <div className="ao-audio-capture-wrap">
+                                    {!audioUrl ? (
+                                        <button
+                                            className={`ao-ngl-media-stub ${isRecording ? 'recording' : ''}`}
+                                            onMouseDown={(e) => { e.preventDefault(); startRecording(); }}
+                                            onMouseUp={(e) => { e.preventDefault(); stopRecording(); }}
+                                            onTouchStart={(e) => { e.preventDefault(); startRecording(); }}
+                                            onTouchEnd={(e) => { e.preventDefault(); stopRecording(); }}
+                                        >
+                                            <span className={`ao-media-icon ${isRecording ? 'pulse' : ''}`}>{isRecording ? '🔴' : '🎙️'}</span>
+                                            <span className="ao-recording-time">{isRecording ? `Recording... 0:${recordingTime.toString().padStart(2, '0')}` : 'Hold to record voice note'}</span>
+                                        </button>
+                                    ) : (
+                                        <div className="ao-audio-preview">
+                                            <audio controls src={audioUrl} className="ao-audio-player" />
+                                            <button className="ao-preview-retake" onClick={(e) => { e.preventDefault(); resetAudio(); }}>🗑️ Retake</button>
+                                        </div>
+                                    )}
+                                    <p className="ao-audio-hint">Max 60 seconds</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
+
+                <div className="ao-ngl-secure-badge">
+                    <span role="img" aria-label="lock">🔒</span> anonymous q&a
+                </div>
+
+                {error && <div className="ao-ngl-error" role="alert">{error}</div>}
+
+                <button className={`ao-ngl-submit-btn${isLoading ? ' loading' : ''}`} onClick={handleSubmit} disabled={isSubmitDisabled()} id="askout-submit">
+                    {isLoading ? (<><span className="ao-spinner" /> {uploadProgress ?? 'Sending...'}</>) : 'Send!'}
+                </button>
+
+                {fomoCount && (
+                    <div className="ao-ngl-fomo-section">
+                        <span className="ao-ngl-fomo-text">🔥 {fomoCount} users tapped the button</span>
+                        <a href="https://glowrizz.club" className="ao-ngl-fomo-cta" target="_blank" rel="noopener noreferrer">Get your link now!</a>
+                    </div>
+                )}
+
+                <div className="ao-ngl-how-wrap">
+                    <button className="ao-ngl-how-toggle" onClick={() => setHowOpen(v => !v)} aria-expanded={howOpen}>
+                        <span>How does this work?</span>
+                        <span className={`ao-how-chevron${howOpen ? ' open' : ''}`}>▼</span>
+                    </button>
+                    <div className={`ao-ngl-how-body${howOpen ? ' open' : ''}`}>
+                        <div className="ao-how-item"><span className="ao-how-item-icon">🔒</span><span>Fully anonymous — your name is never attached to your message.</span></div>
+                        <div className="ao-how-item"><span className="ao-how-item-icon">💎</span><span>They spend Aura to see who you are. It costs them, not you.</span></div>
+                        <div className="ao-how-item"><span className="ao-how-item-icon">✦</span><span>Your identity is never revealed directly — only through Aura spend.</span></div>
+                    </div>
+                </div>
+
             </div>
         </div>
     );
