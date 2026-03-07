@@ -1,0 +1,15 @@
+[
+    {
+        "relation": [
+            "delegate_permission/common.handle_all_urls",
+            "delegate_permission/common.get_login_creds"
+        ],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.rizzify.rizzify",
+            "sha256_cert_fingerprints": [
+                "BD:CB:41:D3:03:36:92:70:B4:92:43:BA:66:F6:FB:74:D9:34:22:FD:DF:C3:C0:24:2A:96:CD:CA:E7:9C:56:18"
+            ]
+        }
+    }
+]
