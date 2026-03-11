@@ -458,101 +458,104 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
         return false;
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         if (isSubmitDisabled()) return;
+        
+        // Let the UI know we started (to show immediate feedback)
         setIsLoading(true);
         setError(null);
         setUploadProgress(null);
 
-        try {
-            let fingerprint = 'unknown';
-            try {
-                const FingerprintJS = await import('@fingerprintjs/fingerprintjs');
-                const fp = await FingerprintJS.load();
-                fingerprint = (await fp.get()).visitorId;
-            } catch { /* continue anonymous */ }
+        // Capture synchronous state before navigating/going async
+        const currentMsg = message.trim();
+        const currentRating = rating;
+        const yesNo = askoutYesNo;
+        const currentAudioBlob = audioBlob;
+        const currentImageFile = imageFile;
+        const recTime = recordingTime;
 
-            const clientMeta = collectClientMetadata();
-            const ua = navigator.userAgent || '';
-            let clientHint = 'desktop user';
-            if (/iphone|ipad|ipod/i.test(ua)) clientHint = 'iPhone user';
-            else if (/android/i.test(ua)) clientHint = 'Android user';
-            else if (/mac/i.test(navigator.platform ?? '')) clientHint = 'Mac user';
-            else if (/win/i.test(navigator.platform ?? '')) clientHint = 'Windows user';
+        // OPTIMISTIC UI: Navigate to the success page immediately
+        // We use a tiny timeout to allow the 'loading' spinner to render for a split second 
+        // to provide "lightning fast" but perceptible haptic/visual feedback.
+        setTimeout(() => {
+            router.push('/sent');
+        }, 50);
 
-            let locationData: { lat: number; lng: number } | null = null;
+        // Run the heavy lifting (fingerprint, geo, fetch) purely in the background
+        (async () => {
             try {
-                if (navigator.geolocation) {
-                    locationData = await new Promise(resolve => {
-                        navigator.geolocation.getCurrentPosition(
-                            pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-                            () => resolve(null),
-                            { timeout: 4000, maximumAge: 60000 }
-                        );
-                    });
+                let fingerprint = 'unknown';
+                try {
+                    // Start fingerprinting but race it so it doesn't block forever
+                    const fpPromise = import('@fingerprintjs/fingerprintjs').then(fpLib => fpLib.load().then(fp => fp.get()));
+                    const fpResult = await Promise.race([
+                        fpPromise,
+                        new Promise((_, reject) => setTimeout(() => reject('fp_timeout'), 2000))
+                    ]) as { visitorId: string };
+                    fingerprint = fpResult.visitorId;
+                } catch { /* continue anonymous */ }
+
+                const clientMeta = collectClientMetadata();
+                const ua = navigator.userAgent || '';
+                let clientHint = 'desktop user';
+                if (/iphone|ipad|ipod/i.test(ua)) clientHint = 'iPhone user';
+                else if (/android/i.test(ua)) clientHint = 'Android user';
+                else if (/mac/i.test(navigator.platform ?? '')) clientHint = 'Mac user';
+                else if (/win/i.test(navigator.platform ?? '')) clientHint = 'Windows user';
+
+                let locationData: { lat: number; lng: number } | null = null;
+                try {
+                    if (navigator.geolocation) {
+                        locationData = await new Promise(resolve => {
+                            navigator.geolocation.getCurrentPosition(
+                                pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                                () => resolve(null),
+                                { timeout: 3000, maximumAge: 60000 }
+                            );
+                        });
+                    }
+                } catch { /* no geo */ }
+
+                let payload: Record<string, unknown> = {};
+
+                if (config.type === 'text') {
+                    payload = { message: slug === 'three-words' ? currentMsg.split(',').filter(Boolean).join(' · ') : currentMsg };
+                } else if (config.type === 'rating') {
+                    payload = { message: `Rating: ${currentRating}/10`, score: currentRating };
+                } else if (config.type === 'askout') {
+                    payload = { message: currentMsg, choice: yesNo };
+                } else if (config.type === 'audio' && currentAudioBlob) {
+                    const { url, path } = await uploadMedia(currentAudioBlob, 'audio', username);
+                    payload = { media_url: url, media_path: path, duration_ms: recTime * 1000 };
+                } else if (config.type === 'image' && currentImageFile) {
+                    const { url, path } = await uploadMedia(currentImageFile, 'image', username);
+                    payload = { media_url: url, media_path: path, score: currentRating };
                 }
-            } catch { /* no geo */ }
 
-            let payload: Record<string, unknown> = {};
-
-            if (config.type === 'text') {
-                const msg = message.trim();
-                payload = { message: slug === 'three-words' ? msg.split(',').filter(Boolean).join(' · ') : msg };
-            } else if (config.type === 'rating') {
-                payload = { message: `Rating: ${rating}/10`, score: rating };
-            } else if (config.type === 'askout') {
-                payload = { message: message.trim(), choice: askoutYesNo };
-            } else if (config.type === 'audio' && audioBlob) {
-                setUploadProgress('Uploading audio...');
-                const { url, path } = await uploadMedia(audioBlob, 'audio', username);
-                payload = { media_url: url, media_path: path, duration_ms: recordingTime * 1000 };
-            } else if (config.type === 'image' && imageFile) {
-                setUploadProgress('Uploading image...');
-                const { url, path } = await uploadMedia(imageFile, 'image', username);
-                payload = { media_url: url, media_path: path, score: rating };
+                // Send to backend with keepalive
+                await fetch(getSubmitUrl(), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipient_slug: username,
+                        type: config.type,
+                        payload,
+                        fingerprint,
+                        client_hint: clientHint,
+                        location: locationData,
+                        metadata: {
+                            timezone: clientMeta.timezone,
+                            screen: clientMeta.screen,
+                            browser: clientMeta.browser,
+                            os: clientMeta.os,
+                        },
+                    }),
+                    keepalive: true
+                });
+            } catch (err: unknown) {
+                console.error("Background submission failed:", err);
             }
-
-            setUploadProgress(null);
-
-            const res = await fetch(getSubmitUrl(), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    recipient_slug: username,
-                    type: config.type,
-                    payload,
-                    fingerprint,
-                    client_hint: clientHint,
-                    location: locationData,
-                    metadata: {
-                        timezone: clientMeta.timezone,
-                        screen: clientMeta.screen,
-                        browser: clientMeta.browser,
-                        os: clientMeta.os,
-                    },
-                }),
-            });
-
-            const data = await res.json().catch(() => ({}));
-
-            if (res.status === 429) {
-                setError("You're sending too fast. Wait a moment and try again.");
-                setIsLoading(false);
-                return;
-            }
-
-            if (res.ok && data.success !== false) {
-                router.push('/sent');
-            } else {
-                setError(data.error ?? 'Something went wrong. Please try again.');
-                setIsLoading(false);
-            }
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to send. Check your connection and try again.';
-            setError(msg);
-            setIsLoading(false);
-            setUploadProgress(null);
-        }
+        })();
     };
 
     // ── Suggestion chip row (only for text/askout types) ─────────────────────
