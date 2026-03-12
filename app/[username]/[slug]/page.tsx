@@ -16,6 +16,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function UsernameSlugPage({ params, searchParams }: Props) {
     const { username, slug } = await params;
+
+    // Special redirect for mog-battle links
+    if (slug === 'mog-battle') {
+        const { redirect } = await import('next/navigation');
+        redirect(`/mogbattle/${username}`);
+    }
+
     const { p } = await searchParams;
 
     let promptText: string | undefined;
