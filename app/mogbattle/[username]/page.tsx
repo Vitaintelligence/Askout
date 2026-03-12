@@ -23,11 +23,11 @@ export default function MogBattleSharePage({
     }, []);
 
     const handleAcceptChallenge = () => {
-        // Attempt deep link to app
-        window.location.href = `https://maxify.app/battle/mogbattle/${username}`;
-        // Fallback to maxify.app download page
+        // Deep link into the Maxify app via Universal Link
+        window.location.href = `https://askout.link/battle/mogbattle/${username}`;
+        // Fallback: send to download page after 2.5s if app didn't open
         setTimeout(() => {
-            window.location.href = "https://maxify.app/download";
+            window.location.href = "https://apps.apple.com/app/maxify";
         }, 2500);
     };
 
