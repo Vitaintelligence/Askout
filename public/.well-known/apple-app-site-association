@@ -3,7 +3,7 @@
         "apps": [],
         "details": [
             {
-                "appID": "TEAM_ID.com.maxify.app",
+                "appID": "TEAM_ID.com.maxify.official",
                 "paths": [
                     "/battle/mogbattle/*",
                     "/battle/*",
