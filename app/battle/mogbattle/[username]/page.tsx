@@ -61,7 +61,7 @@ export default function MogBattlePage({
                             title: "Download Maxify",
                             sub: "The app where all battles happen. Free.",
                             cta: "Get Maxify on the App Store",
-                            href: "https://apps.apple.com/app/maxify",
+                            href: "https://apps.apple.com/us/app/maxify-rate-me-ai/id6743714386",
                         },
                         {
                             n: "2",
@@ -180,7 +180,10 @@ export default function MogBattlePage({
                         {ticking ? "Opening app…" : "ACCEPT THE MOG ⚔️"}
                     </button>
                     <p className="text-center text-xs text-white/20">
-                        Requires the <span className="text-white/40 font-semibold">Maxify App</span> · Free on iOS
+                        Requires the <span className="text-white/40 font-semibold">Maxify App</span> · Free on{" "}
+                        <a href="https://apps.apple.com/us/app/maxify-rate-me-ai/id6743714386" className="text-white/40 underline">iOS</a>
+                        {" "}&amp;{" "}
+                        <a href="https://play.google.com/store/apps/details?id=com.maxify.app" className="text-white/40 underline">Android</a>
                     </p>
                 </div>
             </div>
