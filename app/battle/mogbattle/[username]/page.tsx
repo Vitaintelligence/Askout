@@ -9,118 +9,181 @@ const craftyFont = Permanent_Marker({
     display: "swap",
 });
 
+type Step = "challenge" | "guide";
+
 export default function MogBattlePage({
     params,
 }: {
     params: Promise<{ username: string }>;
 }) {
-    const resolvedParams = use(params);
-    const username = resolvedParams.username;
+    const { username } = use(params);
     const [mounted, setMounted] = useState(false);
-    const [opening, setOpening] = useState(false);
+    const [step, setStep] = useState<Step>("challenge");
+    const [ticking, setTicking] = useState(false);
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    useEffect(() => setMounted(true), []);
 
     const handleAcceptChallenge = () => {
-        setOpening(true);
-        // Universal Link — opens Maxify app directly on iOS/Android
-        window.location.href = `https://askout.link/battle/mogbattle/${username}`;
-        // Fallback after 2.5s: send to App Store
+        // Try Universal Link — works if app is already installed
+        const deepLink = `https://askout.link/battle/mogbattle/${username}`;
+        window.location.href = deepLink;
+
+        // After 1.8s, if still here, show the "download first" guide
+        setTicking(true);
         setTimeout(() => {
-            window.location.href = "https://apps.apple.com/app/maxify";
-        }, 2500);
+            if (document.hidden) return; // app opened — tab backgrounded
+            setStep("guide");
+            setTicking(false);
+        }, 1800);
     };
 
     if (!mounted) return null;
 
-    return (
-        <div className="min-h-[100dvh] bg-black text-white flex flex-col items-center justify-center overflow-hidden relative font-sans selection:bg-[#00FFCC] selection:text-black">
-            {/* Background Glows */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[60vh] bg-gradient-to-b from-[#00FFCC]/15 to-transparent blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[40vh] bg-gradient-to-t from-[#AA00FF]/10 to-transparent blur-[80px] pointer-events-none" />
+    // ─── GUIDE STEP ────────────────────────────────────────────────────────────
+    if (step === "guide") {
+        return (
+            <div className="min-h-[100dvh] bg-[#09090B] text-white flex flex-col items-center justify-center px-6 font-sans">
+                <div className="w-full max-w-sm flex flex-col gap-8">
 
-            {/* Content */}
-            <div className="relative z-10 w-full max-w-sm px-6 py-12 flex flex-col items-center justify-between min-h-[100dvh]">
-
-                {/* Live Challenge pill */}
-                <div className="flex flex-col items-center gap-2 mt-4">
-                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-[#00FFCC]/20 backdrop-blur-md">
-                        <span className="text-[#00FFCC] text-xs">⚔️</span>
-                        <span className="text-xs font-bold tracking-widest uppercase text-[#00FFCC]/80">
-                            MOG BATTLE
-                        </span>
+                    {/* Header */}
+                    <div className="text-center">
+                        <p className="text-xs font-bold tracking-[0.25em] uppercase text-white/30 mb-3">To accept this battle</p>
+                        <h1 className={`text-4xl font-black text-white leading-tight ${craftyFont.className}`}>
+                            2 quick steps
+                        </h1>
                     </div>
-                </div>
 
-                {/* Avatar + Name */}
-                <div className="w-full flex flex-col items-center my-auto pt-8">
-                    {/* Avatar ring */}
-                    <div className="relative mb-8">
-                        <div className="relative w-36 h-36 rounded-full overflow-hidden border-4 border-[#00FFCC]/40 shadow-[0_0_60px_rgba(0,255,204,0.35)] animate-float">
-                            <div className="absolute inset-0 bg-gradient-to-br from-[#00FFCC]/30 to-[#AA00FF]/40" />
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-6xl font-black uppercase text-white mix-blend-overlay select-none">
-                                {username.charAt(0)}
+                    {/* Steps */}
+                    {[
+                        {
+                            n: "1",
+                            icon: "⬇️",
+                            title: "Download Maxify",
+                            sub: "The app where all battles happen. Free.",
+                            cta: "Get Maxify on the App Store",
+                            href: "https://apps.apple.com/app/maxify",
+                        },
+                        {
+                            n: "2",
+                            icon: "⚔️",
+                            title: "Tap this link again",
+                            sub: "Once installed, come back and tap ACCEPT THE MOG. The app will open straight to the battle.",
+                            cta: null,
+                            href: null,
+                        },
+                    ].map((s) => (
+                        <div key={s.n} className="flex gap-4 items-start">
+                            <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 text-xl">
+                                {s.icon}
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-black text-white text-base leading-tight mb-1">{s.title}</p>
+                                <p className="text-white/40 text-sm leading-relaxed">{s.sub}</p>
+                                {s.cta && (
+                                    <a
+                                        href={s.href!}
+                                        className="inline-block mt-3 px-5 py-2.5 bg-white text-black font-black text-sm rounded-full"
+                                    >
+                                        {s.cta} →
+                                    </a>
+                                )}
                             </div>
                         </div>
-                        {/* Pulsing ring */}
-                        <div className="absolute inset-0 rounded-full border border-[#00FFCC]/40 opacity-60 animate-ping-slow" />
+                    ))}
+
+                    {/* Divider */}
+                    <div className="h-px bg-white/5" />
+
+                    {/* Re-try CTA */}
+                    <button
+                        onClick={handleAcceptChallenge}
+                        className="w-full py-4 rounded-full bg-white text-black font-black text-base tracking-wide"
+                    >
+                        I have it — open the app ⚔️
+                    </button>
+
+                    <p className="text-center text-xs text-white/20">
+                        Challenge by <span className="text-white/50 font-bold">{username}</span>
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // ─── CHALLENGE STEP ────────────────────────────────────────────────────────
+    return (
+        <div className="min-h-[100dvh] bg-[#09090B] text-white flex flex-col font-sans overflow-hidden">
+
+            {/* Subtle top edge glow — NOT full screen gradient */}
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+            <div className="relative z-10 flex flex-col items-center justify-between min-h-[100dvh] px-6 py-12 max-w-sm mx-auto w-full">
+
+                {/* Live pill */}
+                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#00FFCC] shadow-[0_0_8px_#00FFCC] inline-block animate-pulse" />
+                    <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-white/50">
+                        Live Challenge
+                    </span>
+                </div>
+
+                {/* Main content */}
+                <div className="flex flex-col items-center text-center gap-6 my-auto">
+
+                    {/* Avatar initials block */}
+                    <div className="relative">
+                        <div className="w-28 h-28 rounded-[32px] bg-white/[0.04] border border-white/10 flex items-center justify-center">
+                            <span className={`text-5xl font-black text-white uppercase ${craftyFont.className}`}>
+                                {username.charAt(0)}
+                            </span>
+                        </div>
+                        {/* Teal dot badge */}
+                        <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#00FFCC] border-2 border-[#09090B] flex items-center justify-center">
+                            <span className="text-[8px] font-black text-black">⚔</span>
+                        </div>
                     </div>
 
-                    <h1 className={`text-4xl sm:text-5xl font-black text-center leading-tight tracking-tight mb-4 ${craftyFont.className}`}>
-                        <span className="text-[#00FFCC] uppercase text-5xl sm:text-6xl">{username}</span>
-                        <br />
-                        <span className="text-white">wants to mog you</span>
-                    </h1>
+                    {/* Headline */}
+                    <div>
+                        <p className="text-xs font-bold tracking-[0.2em] uppercase text-white/30 mb-2">Mog Battle</p>
+                        <h1 className={`text-[42px] leading-none font-black text-white mb-3 ${craftyFont.className}`}>
+                            {username}
+                            <br />
+                            <span className="text-white/40 text-3xl">wants to mog you</span>
+                        </h1>
+                        <p className="text-white/35 text-sm leading-relaxed max-w-[240px] mx-auto">
+                            Submit your best scan. The AI decides who&apos;s the alpha.
+                        </p>
+                    </div>
 
-                    <p className="text-center text-white/50 font-medium max-w-[280px] mb-2 text-sm leading-relaxed">
-                        Who&apos;s the alpha? Accept the mog battle and let the AI decide.
-                    </p>
-
-                    {/* Score teaser pills */}
-                    <div className="flex items-center gap-2 mt-4">
-                        <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-white/40 font-mono">? . ?</span>
-                        <span className="text-white/30 font-black text-lg">vs</span>
-                        <span className="px-3 py-1 rounded-full bg-[#00FFCC]/10 border border-[#00FFCC]/30 text-xs text-[#00FFCC] font-mono font-black">YOU</span>
+                    {/* Score tease */}
+                    <div className="flex items-center gap-3">
+                        <div className="px-4 py-2 rounded-2xl bg-white/[0.04] border border-white/[0.07]">
+                            <p className="text-xs text-white/30 font-medium mb-0.5">Challenger</p>
+                            <p className="font-black text-white font-mono text-lg">?·?</p>
+                        </div>
+                        <span className="text-2xl font-black text-white/20">vs</span>
+                        <div className="px-4 py-2 rounded-2xl bg-[#00FFCC]/[0.06] border border-[#00FFCC]/20">
+                            <p className="text-xs text-[#00FFCC]/50 font-medium mb-0.5">You</p>
+                            <p className="font-black text-[#00FFCC] font-mono text-lg">—·—</p>
+                        </div>
                     </div>
                 </div>
 
                 {/* CTA */}
-                <div className="w-full mt-auto pb-4">
+                <div className="w-full space-y-3">
                     <button
                         onClick={handleAcceptChallenge}
-                        disabled={opening}
-                        className="relative w-full group overflow-hidden rounded-full p-[2px] disabled:opacity-70"
+                        disabled={ticking}
+                        className="w-full py-5 rounded-2xl bg-white text-black font-black text-base tracking-wide disabled:opacity-60 transition-all active:scale-[0.98]"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#00FFCC] via-[#AA00FF] to-[#00FFCC] opacity-80 group-hover:opacity-100 transition-opacity duration-300 animate-gradient-x bg-[length:200%_auto]" />
-                        <div className="relative flex items-center justify-center gap-3 w-full bg-black/80 backdrop-blur-xl rounded-full px-8 py-5 border border-white/10 group-hover:bg-black/60 transition-colors duration-300">
-                            <span className="font-black text-lg tracking-wide text-white">
-                                {opening ? "OPENING APP…" : "ACCEPT THE MOG ⚔️"}
-                            </span>
-                        </div>
+                        {ticking ? "Opening app…" : "ACCEPT THE MOG ⚔️"}
                     </button>
-
-                    <p className="text-center text-xs text-white/30 mt-5">
-                        Requires the <span className="font-bold text-white/60">Maxify App</span>
+                    <p className="text-center text-xs text-white/20">
+                        Requires the <span className="text-white/40 font-semibold">Maxify App</span> · Free on iOS
                     </p>
                 </div>
             </div>
-
-            <style dangerouslySetInnerHTML={{
-                __html: `
-        @keyframes gradient-x {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-gradient-x { animation: gradient-x 3s ease infinite; }
-        .animate-float { animation: float 4s ease-in-out infinite; }
-        .animate-ping-slow { animation: ping 3s cubic-bezier(0, 0, 0.2, 1) infinite; }
-      `}} />
         </div>
     );
 }
