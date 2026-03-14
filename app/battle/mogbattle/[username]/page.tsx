@@ -24,14 +24,37 @@ export default function MogBattlePage({
     useEffect(() => setMounted(true), []);
 
     const handleAcceptChallenge = () => {
-        // Try Universal Link — works if app is already installed
-        const deepLink = `https://askout.link/battle/mogbattle/${username}`;
-        window.location.href = deepLink;
-
-        // After 1.8s, if still here, show the "download first" guide
         setTicking(true);
+
+        // Detect platform
+        const ua = navigator.userAgent;
+        const isAndroid = /android/i.test(ua);
+        const isIOS = /iphone|ipad|ipod/i.test(ua);
+
+        // Custom scheme URI — works from JS in Safari and Chrome
+        const customScheme = `maxify://battle/mogbattle/${username}`;
+
+        // Android intent:// format — most reliable on Android Chrome
+        const intentUri =
+            `intent://battle/mogbattle/${username}#Intent;` +
+            `scheme=maxify;` +
+            `package=com.rizzify.rizzify;` +
+            `S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.rizzify.rizzify;` +
+            `end`;
+
+        if (isAndroid) {
+            window.location.href = intentUri;
+        } else {
+            // iOS & desktop: try custom scheme, fall back to guide after 1.8s
+            window.location.href = customScheme;
+        }
+
+        // If still on page after 1.8s → app not installed, show download guide
         setTimeout(() => {
-            if (document.hidden) return; // app opened — tab backgrounded
+            if (document.hidden) {
+                setTicking(false);
+                return; // app opened — tab was backgrounded
+            }
             setStep("guide");
             setTicking(false);
         }, 1800);
