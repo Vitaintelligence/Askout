@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useMogBattle } from '@/src/hooks/useMogBattle';
 
 type PageProps = {
-  params: Promise<{ userId: string }> | { userId: string };
+  params: Promise<{ userId: string }>;
 };
 
 export default function MogBattlePage({ params }: PageProps) {
   const unwrappedParams = typeof (params as any).then === 'function'
     ? use(params as Promise<{ userId: string }>)
-    : params as { userId: string };
+    : params as unknown as { userId: string };
 
   const userId = unwrappedParams.userId;
   const router = useRouter();

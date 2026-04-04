@@ -9,13 +9,13 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_ke
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 type PageProps = {
-  params: Promise<{ battleId: string }> | { battleId: string };
+  params: Promise<{ battleId: string }>;
 };
 
 export default function MogResultPage({ params }: PageProps) {
   const unwrappedParams = typeof (params as any).then === 'function'
     ? use(params as Promise<{ battleId: string }>)
-    : params as { battleId: string };
+    : params as unknown as { battleId: string };
 
   const battleId = unwrappedParams.battleId;
 

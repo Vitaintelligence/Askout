@@ -10,14 +10,14 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_ke
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 type PageProps = {
-  params: Promise<{ userId: string }> | { userId: string };
+  params: Promise<{ userId: string }>;
 };
 
 export default function MogChallengePage({ params }: PageProps) {
   // Handle Next.js 15 params API
   const unwrappedParams = typeof (params as any).then === 'function' 
     ? use(params as Promise<{ userId: string }>) 
-    : params as { userId: string };
+    : params as unknown as { userId: string };
     
   const userId = unwrappedParams.userId;
   const router = useRouter();
