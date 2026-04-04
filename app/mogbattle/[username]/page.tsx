@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Permanent_Marker } from "next/font/google";
 
 const craftyFont = Permanent_Marker({
@@ -18,17 +19,14 @@ export default function MogBattleSharePage({
     const username = resolvedParams.username;
     const [mounted, setMounted] = useState(false);
 
+    const router = useRouter();
+
     useEffect(() => {
         setMounted(true);
     }, []);
 
     const handleAcceptChallenge = () => {
-        // Deep link into the Maxify app via Universal Link
-        window.location.href = `https://askout.link/battle/mogbattle/${username}`;
-        // Fallback: send to download page after 2.5s if app didn't open
-        setTimeout(() => {
-            window.location.href = "https://apps.apple.com/app/maxify";
-        }, 2500);
+        router.push(`/mog/battle/${username}`);
     };
 
     if (!mounted) return null;
@@ -104,7 +102,7 @@ export default function MogBattleSharePage({
                     </button>
 
                     <p className="text-center text-xs text-white/40 mt-6 flex items-center justify-center gap-2">
-                        Requires the <span className="font-bold text-white/80">Maxify App</span>
+                        Runs entirely in your <span className="font-bold text-white/80">Browser</span>
                     </p>
                 </div>
             </div>
