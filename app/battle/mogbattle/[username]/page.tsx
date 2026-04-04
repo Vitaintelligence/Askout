@@ -2,13 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Permanent_Marker } from "next/font/google";
-
-const craftyFont = Permanent_Marker({
-    weight: "400",
-    subsets: ["latin"],
-    display: "swap",
-});
+// Font corporate setup
 
 type Step = "challenge" | "guide";
 
@@ -41,7 +35,7 @@ export default function MogBattlePage({
                     {/* Header */}
                     <div className="text-center">
                         <p className="text-xs font-bold tracking-[0.25em] uppercase text-white/30 mb-3">To accept this battle</p>
-                        <h1 className={`text-4xl font-black text-white leading-tight ${craftyFont.className}`}>
+                        <h1 className="text-4xl font-black text-white leading-tight">
                             2 quick steps
                         </h1>
                     </div>
@@ -126,7 +120,7 @@ export default function MogBattlePage({
                     {/* Avatar initials block */}
                     <div className="relative">
                         <div className="w-28 h-28 rounded-[32px] bg-white/[0.04] border border-white/10 flex items-center justify-center">
-                            <span className={`text-5xl font-black text-white uppercase ${craftyFont.className}`}>
+                            <span className="text-5xl font-black text-white uppercase">
                                 {username.charAt(0)}
                             </span>
                         </div>
@@ -139,7 +133,7 @@ export default function MogBattlePage({
                     {/* Headline */}
                     <div>
                         <p className="text-xs font-bold tracking-[0.2em] uppercase text-white/30 mb-2">Mog Battle</p>
-                        <h1 className={`text-[42px] leading-none font-black text-white mb-3 ${craftyFont.className}`}>
+                        <h1 className="text-[42px] leading-none font-black text-white mb-3">
                             {username}
                             <br />
                             <span className="text-white/40 text-3xl">wants to mog you</span>

@@ -2,13 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Permanent_Marker } from "next/font/google";
-
-const craftyFont = Permanent_Marker({
-    weight: "400",
-    subsets: ["latin"],
-    display: "swap",
-});
+ // No custom font, keep it corporate
 
 export default function MogBattleSharePage({
     params,
@@ -70,9 +64,7 @@ export default function MogBattleSharePage({
                         <div className="absolute inset-0 rounded-full border border-[#FF2D75] opacity-50 animate-ping-slow" />
                     </div>
 
-                    <h1
-                        className={`text-4xl sm:text-5xl font-black text-center leading-tight tracking-tight mb-4 lowercase drop-shadow-[0_4px_24px_rgba(255,45,117,0.3)] animate-fade-in-up ${craftyFont.className}`}
-                    >
+                    <h1 className="text-4xl sm:text-5xl font-black text-center leading-tight tracking-tight mb-4 lowercase drop-shadow-[0_4px_24px_rgba(255,45,117,0.3)] animate-fade-in-up">
                         <span className="text-[#FF2D75] uppercase text-5xl sm:text-6xl">{username}</span>
                         <br />
                         wants to battle
