@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMogBattle } from '@/hooks/useMogBattle';
+import { useMogBattle } from '@/src/hooks/useMogBattle';
 
 type PageProps = {
   params: Promise<{ userId: string }> | { userId: string };
