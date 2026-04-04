@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Permanent_Marker } from "next/font/google";
 
 const craftyFont = Permanent_Marker({
@@ -20,44 +21,13 @@ export default function MogBattlePage({
     const [mounted, setMounted] = useState(false);
     const [step, setStep] = useState<Step>("challenge");
     const [ticking, setTicking] = useState(false);
+    const router = useRouter();
 
     useEffect(() => setMounted(true), []);
 
     const handleAcceptChallenge = () => {
         setTicking(true);
-
-        // Detect platform
-        const ua = navigator.userAgent;
-        const isAndroid = /android/i.test(ua);
-        const isIOS = /iphone|ipad|ipod/i.test(ua);
-
-        // Custom scheme URI — works from JS in Safari and Chrome
-        const customScheme = `maxify://battle/mogbattle/${username}`;
-
-        // Android intent:// format — most reliable on Android Chrome
-        const intentUri =
-            `intent://battle/mogbattle/${username}#Intent;` +
-            `scheme=maxify;` +
-            `package=com.rizzify.rizzify;` +
-            `S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.rizzify.rizzify;` +
-            `end`;
-
-        if (isAndroid) {
-            window.location.href = intentUri;
-        } else {
-            // iOS & desktop: try custom scheme, fall back to guide after 1.8s
-            window.location.href = customScheme;
-        }
-
-        // If still on page after 1.8s → app not installed, show download guide
-        setTimeout(() => {
-            if (document.hidden) {
-                setTicking(false);
-                return; // app opened — tab was backgrounded
-            }
-            setStep("guide");
-            setTicking(false);
-        }, 1800);
+        router.push(`/mog/battle/${username}`);
     };
 
     if (!mounted) return null;
@@ -200,13 +170,10 @@ export default function MogBattlePage({
                         disabled={ticking}
                         className="w-full py-5 rounded-2xl bg-white text-black font-black text-base tracking-wide disabled:opacity-60 transition-all active:scale-[0.98]"
                     >
-                        {ticking ? "Opening app…" : "ACCEPT THE MOG ⚔️"}
+                        {ticking ? "Starting…" : "ACCEPT THE MOG ⚔️"}
                     </button>
                     <p className="text-center text-xs text-white/20">
-                        Requires the <span className="text-white/40 font-semibold">Maxify App</span> · Free on{" "}
-                        <a href="https://apps.apple.com/us/app/maxify-rate-me-ai/id6743714386" className="text-white/40 underline">iOS</a>
-                        {" "}&amp;{" "}
-                        <a href="https://play.google.com/store/apps/details?id=com.maxify.app" className="text-white/40 underline">Android</a>
+                        Plays seamlessly in your <span className="text-white/40 font-semibold">Web Browser</span>
                     </p>
                 </div>
             </div>

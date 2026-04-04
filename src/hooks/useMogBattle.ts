@@ -73,11 +73,23 @@ export function useMogBattle(userId: string) {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('avatar_url')
+        .select('user_key, avatar_url')
         .eq('username', userId)
         .single();
 
-      if (profile && profile.avatar_url) {
+      let avatarUrl = profile?.avatar_url;
+
+      if (!avatarUrl && profile?.user_key) {
+        // Fallback to user_profiles
+        const { data: userProfile } = await supabase
+          .from('user_profiles')
+          .select('avatar_url')
+          .eq('user_id', profile.user_key)
+          .single();
+        avatarUrl = userProfile?.avatar_url;
+      }
+
+      if (avatarUrl) {
         return new Promise((resolve) => {
           const img = new Image();
           img.crossOrigin = 'anonymous';
@@ -92,7 +104,7 @@ export function useMogBattle(userId: string) {
           img.onerror = () => {
             resolve({ jawline: 50, eyes: 50, skin: 50, symmetry: 50, total: 50 });
           };
-          img.src = profile.avatar_url;
+          img.src = avatarUrl;
         });
       }
     } catch (e) {
