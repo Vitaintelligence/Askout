@@ -331,12 +331,157 @@
     transition: all 0.2s;
 }
 
+.ao-ngl-media-stub:hover {
+    border-color: var(--theme-accent);
+    background: rgba(255, 255, 255, 0.08);
+}
+
 .ao-media-icon {
     font-size: 40px;
 }
 
 .ao-ngl-media-stub.recording .ao-media-icon {
     animation: ao-pulse 1s infinite;
+}
+
+/* ─── Image Preview & Blur Unlock ─── */
+.ao-image-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.ao-preview-blur-wrap {
+    position: relative;
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    /* Smooth border glow on reveal */
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06);
+    transition: box-shadow 0.35s ease;
+}
+
+.ao-preview-blur-wrap.is-revealed {
+    cursor: default;
+    box-shadow: 0 0 0 2px var(--theme-accent);
+}
+
+.ao-preview-img {
+    width: 100%;
+    display: block;
+    border-radius: 16px;
+    object-fit: cover;
+    max-height: 280px;
+    transition: filter 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Blurred state — heavy blur + slight scale up for drama */
+.ao-preview-blur-wrap.is-blurred .ao-preview-img {
+    filter: blur(18px) saturate(0.4);
+    transform: scale(1.08);
+}
+
+/* Revealed state — crystal clear */
+.ao-preview-blur-wrap.is-revealed .ao-preview-img {
+    filter: blur(0px) saturate(1);
+    transform: scale(1);
+}
+
+/* Lock overlay — sits on top of the blurred image */
+.ao-preview-lock-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(2px);
+    border-radius: 16px;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 2;
+}
+
+.ao-preview-lock-icon {
+    font-size: 36px;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
+    animation: ao-lock-float 2.8s ease-in-out infinite;
+}
+
+@keyframes ao-lock-float {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-4px); }
+}
+
+.ao-preview-lock-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Retake / Remove button under the preview */
+.ao-preview-retake {
+    background: rgba(255, 80, 80, 0.1);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    color: #ff8080;
+    padding: 10px 20px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    font-family: 'Inter', sans-serif;
+}
+
+.ao-preview-retake:hover {
+    background: rgba(255, 80, 80, 0.2);
+}
+
+.ao-preview-retake:active {
+    transform: scale(0.97);
+}
+
+/* ─── Audio Player Preview ─── */
+.ao-audio-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ao-audio-player {
+    width: 100%;
+    border-radius: 8px;
+    accent-color: var(--theme-accent);
+    /* Webkit audio player tint */
+    color-scheme: dark;
+}
+
+.ao-audio-hint {
+    font-size: 12px;
+    color: var(--ao-muted);
+    font-weight: 500;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.ao-recording-time {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 @keyframes ao-pulse {

@@ -330,6 +330,7 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
     const [recordingTime, setRecordingTime] = useState(0);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+    const [imageBlurred, setImageBlurred] = useState<boolean>(true);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -446,6 +447,7 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
         if (!file.type.startsWith('image/')) { setError('Please upload a valid image file.'); return; }
         setImageFile(file);
         setImagePreviewUrl(URL.createObjectURL(file));
+        setImageBlurred(true); // Always start blurred on new upload
     };
 
     const isSubmitDisabled = () => {
@@ -756,9 +758,21 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                                     <input type="file" accept="image/*" capture="environment" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
                                     {imagePreviewUrl ? (
                                         <div className="ao-image-preview">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={imagePreviewUrl} alt="Upload preview" className="ao-preview-img" />
-                                            <button className="ao-preview-retake" onClick={(e) => { e.preventDefault(); setImageFile(null); setImagePreviewUrl(null); }}>
+                                            <div
+                                                className={`ao-preview-blur-wrap ${imageBlurred ? 'is-blurred' : 'is-revealed'}`}
+                                                onClick={() => setImageBlurred(false)}
+                                                title={imageBlurred ? 'Tap to reveal' : undefined}
+                                            >
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={imagePreviewUrl} alt="Upload preview" className="ao-preview-img" />
+                                                {imageBlurred && (
+                                                    <div className="ao-preview-lock-overlay">
+                                                        <span className="ao-preview-lock-icon">🔒</span>
+                                                        <span className="ao-preview-lock-label">Tap to preview</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button className="ao-preview-retake" onClick={(e) => { e.preventDefault(); setImageFile(null); setImagePreviewUrl(null); setImageBlurred(true); }}>
                                                 × Remove Image
                                             </button>
                                         </div>
