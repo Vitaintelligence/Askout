@@ -101,22 +101,46 @@ export function useMogBattle(userId: string) {
 
   const getDefenderScore = async (): Promise<any> => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('user_key, avatar_url')
-        .eq('username', userId)
+      // 1. Resolve AskOut slug to true device UUID
+      const { data: askoutUser } = await supabase
+        .from('askout_users')
+        .select('device_id')
+        .eq('slug', userId.toLowerCase())
         .single();
 
-      let avatarUrl = profile?.avatar_url;
+      const deviceId = askoutUser?.device_id;
+      let avatarUrl = null;
 
-      if (!avatarUrl && profile?.user_key) {
-        // Fallback to user_profiles
-        const { data: userProfile } = await supabase
-          .from('user_profiles')
-          .select('avatar_url')
-          .eq('user_id', profile.user_key)
+      if (deviceId) {
+        // Look up image in rate_me_profiles first (most accurate for mogs)
+        const { data: rmProfile } = await supabase
+          .from('rate_me_profiles')
+          .select('last_scan_image_url')
+          .eq('anonymous_id', deviceId)
           .single();
-        avatarUrl = userProfile?.avatar_url;
+          
+        if (rmProfile?.last_scan_image_url) {
+          avatarUrl = rmProfile.last_scan_image_url;
+        }
+
+        // Fallback to profiles/user_profiles via Auth ID
+        if (!avatarUrl) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('user_key', deviceId)
+            .single();
+          if (profile?.avatar_url) avatarUrl = profile.avatar_url;
+        }
+        
+        if (!avatarUrl) {
+          const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('avatar_url')
+            .eq('user_id', deviceId)
+            .single();
+          if (userProfile?.avatar_url) avatarUrl = userProfile.avatar_url;
+        }
       }
 
       if (avatarUrl) {
@@ -225,12 +249,12 @@ export function useMogBattle(userId: string) {
 
       // Find defender's true UUID (user_key / device_id)
       const { data: userRow } = await supabase
-        .from('profiles')
-        .select('user_key')
-        .eq('username', userId)
+        .from('askout_users')
+        .select('device_id')
+        .eq('slug', userId.toLowerCase())
         .single();
         
-      const realChallengerId = userRow?.user_key || userId;
+      const realChallengerId = userRow?.device_id || userId;
 
       // 4. Write to Supabase
       // Using opponent_id to map to the real mog_battles schema
@@ -259,11 +283,11 @@ export function useMogBattle(userId: string) {
       }
 
       // 5. Increment aura if defender won using Egyptian sacred numerology (7 = Perfection/Hathor, 9 = The Ennead)
-      if (defenderWins && userRow?.user_key) {
+      if (defenderWins && userRow?.device_id) {
         const ritualAmount = Math.random() > 0.5 ? 7 : 9;
         
         await supabase.rpc('increment_aura', {
-          p_user_id: userRow.user_key,
+          p_user_id: userRow.device_id,
           p_amount: ritualAmount,
           p_battle_id: data.id
         });
