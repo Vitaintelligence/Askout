@@ -15,6 +15,7 @@ export function useMogBattle(userId: string) {
   const [isCapturing, setIsCapturing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [battleResult, setBattleResult] = useState<string | null>(null);
+  const [challengerAvatarUrl, setChallengerAvatarUrl] = useState<string | null>(null);
 
   // Load models on mount
   useEffect(() => {
@@ -28,7 +29,36 @@ export function useMogBattle(userId: string) {
       }
     }
     init();
-  }, []);
+
+    // Proactively fetch challenger avatar
+    async function fetchAvatar() {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_key, avatar_url')
+          .eq('username', userId)
+          .single();
+
+        let avatarUrl = profile?.avatar_url;
+
+        if (!avatarUrl && profile?.user_key) {
+          const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('avatar_url')
+            .eq('user_id', profile.user_key)
+            .single();
+          avatarUrl = userProfile?.avatar_url;
+        }
+
+        if (avatarUrl) {
+          setChallengerAvatarUrl(avatarUrl);
+        }
+      } catch (e) {
+        console.error("Failed to fetch challenger avatar");
+      }
+    }
+    if (userId) fetchAvatar();
+  }, [userId]);
 
   const startCamera = async () => {
     try {
@@ -243,6 +273,7 @@ export function useMogBattle(userId: string) {
     startCamera,
     stopCamera,
     capture,
-    battleResult
+    battleResult,
+    challengerAvatarUrl
   };
 }

@@ -25,7 +25,8 @@ export default function MogBattlePage({ params }: PageProps) {
     toastMessage,
     videoRef,
     capture,
-    battleResult
+    battleResult,
+    challengerAvatarUrl
   } = useMogBattle(userId);
 
   useEffect(() => {
@@ -90,16 +91,36 @@ export default function MogBattlePage({ params }: PageProps) {
       )}
 
       {/* Top bar overlay */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 10 }}>
         <button 
           onClick={() => router.back()} 
           style={{ background: 'none', border: 'none', color: '#ffffff', fontSize: '24px', cursor: 'pointer', padding: 0 }}
         >
           ←
         </button>
-        <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: 700, letterSpacing: '0.15em' }}>
-          MOG BATTLE
-        </span>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <span style={{ color: '#ffffff', fontSize: '13px', fontWeight: 800, letterSpacing: '0.15em', marginBottom: '8px', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+            MOG BATTLE
+          </span>
+          {challengerAvatarUrl && (
+            <div style={{
+              width: '64px',
+              height: '80px',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              border: '2px solid #FF2D75', // Brand theme border
+              boxShadow: '0 4px 12px rgba(255, 45, 117, 0.4)'
+            }}>
+              <img 
+                src={challengerAvatarUrl} 
+                alt="Challenger" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+          )}
+        </div>
+        
         <div style={{ width: '24px' }} /* Placeholder for spacing */ />
       </div>
 
@@ -123,33 +144,75 @@ export default function MogBattlePage({ params }: PageProps) {
 
       {/* Bottom bar overlay */}
       {!cameraError && (
-        <div style={{ position: 'absolute', bottom: '40px', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 10 }}>
+        <div style={{ position: 'absolute', bottom: '40px', left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px', zIndex: 10 }}>
           
+          {/* Gallery Upload Button */}
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              cursor: 'pointer',
+              padding: 0
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          </button>
+
+          <input 
+            type="file" 
+            accept="image/*" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            style={{ display: 'none' }} 
+          />
+
           {isCapturing ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div className="spinner" style={{ width: '24px', height: '24px', border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#ffffff', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
-              <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: 500 }}>Analyzing...</span>
+            <div style={{ width: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div className="spinner" style={{ width: '24px', height: '24px', border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#FF2D75', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '8px' }} />
+              <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: 500 }}>Scanning</span>
               <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
           ) : (
             <button 
               onClick={handleCaptureTap}
               style={{
-                width: '64px',
-                height: '64px',
+                width: '80px',
+                height: '80px',
                 borderRadius: '50%',
-                border: '2px solid #ffffff',
+                border: '4px solid #ffffff',
                 backgroundColor: 'transparent',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
                 cursor: 'pointer',
-                padding: 0
+                padding: 0,
+                boxShadow: '0 0 20px rgba(0,0,0,0.3)'
               }}
             >
-              <div style={{ width: '52px', height: '52px', borderRadius: '50%', backgroundColor: '#ffffff' }} />
+              <div style={{ 
+                width: '64px', 
+                height: '64px', 
+                borderRadius: '50%', 
+                backgroundColor: '#FF2D75', // Brand blossom/reddish-orangish 
+                background: 'linear-gradient(135deg, #FF2D75 0%, #FF4B2B 100%)'
+              }} />
             </button>
           )}
+
+          {/* Empty spacer to balance the flex layout */}
+          <div style={{ width: '48px', height: '48px' }} />
           
         </div>
       )}
