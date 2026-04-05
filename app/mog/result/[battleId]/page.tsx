@@ -23,6 +23,8 @@ export default function MogResultPage({ params }: PageProps) {
   const [battle, setBattle] = useState<any>(null);
   const [defenderProfile, setDefenderProfile] = useState<any>(null);
   const [localSnapshot, setLocalSnapshot] = useState<string | null>(null);
+  const [localChallengerScore, setLocalChallengerScore] = useState<any>(null);
+  const [localDefenderScore, setLocalDefenderScore] = useState<any>(null);
 
   // Animation states
   const [mounted, setMounted] = useState(false);
@@ -35,6 +37,12 @@ export default function MogResultPage({ params }: PageProps) {
     if (typeof window !== 'undefined') {
       const snap = sessionStorage.getItem('mog_latest_snapshot');
       if (snap) setLocalSnapshot(snap);
+      try {
+        const defScore = JSON.parse(sessionStorage.getItem('mog_defender_score') || '{}');
+        const chalScore = JSON.parse(sessionStorage.getItem('mog_challenger_score') || '{}');
+        setLocalDefenderScore(defScore);
+        setLocalChallengerScore(chalScore);
+      } catch (e) {}
     }
 
     async function fetchResult() {
@@ -185,7 +193,7 @@ export default function MogResultPage({ params }: PageProps) {
         style={{
           flex: 1,
           backgroundColor: '#111',
-          border: isWinner ? '2px solid #FFCC00' : '1px solid #222',
+          border: isWinner ? '1.5px solid #ffffff' : '1px solid #333',
           borderRadius: '24px',
           overflow: 'hidden',
           position: 'relative',
@@ -194,7 +202,6 @@ export default function MogResultPage({ params }: PageProps) {
           opacity: mounted ? 1 : 0,
           transform: mounted ? 'translateY(0)' : 'translateY(16px)',
           transition: 'all 300ms ease',
-          boxShadow: isWinner ? '0 0 40px rgba(255, 204, 0, 0.25)' : 'none',
         }}
       >
         <img 
@@ -205,37 +212,37 @@ export default function MogResultPage({ params }: PageProps) {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            filter: isWinner ? 'none' : 'grayscale(100%) brightness(0.6)',
+            filter: isWinner ? 'none' : 'grayscale(100%) opacity(0.6)',
             backgroundColor: '#111'
           }}
         />
 
-        {/* Text Gradient Overlay */}
+        {/* Text Fade Overlay - No gradients, just solid dark gradient for text legibility */}
         <div style={{
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
           padding: '40px 16px 16px 16px',
-          background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 40%, transparent 100%)',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 1
         }}>
-          <span style={{ fontSize: '10px', color: isWinner ? '#FFCC00' : '#D32F2F', letterSpacing: '0.2em', fontWeight: 900, marginBottom: '2px' }}>
-            {isWinner ? 'MOGGER' : 'MOGGED'}
+          <span style={{ fontSize: '10px', color: isWinner ? '#ffffff' : '#888888', letterSpacing: '0.15em', fontWeight: 900, marginBottom: '4px' }}>
+            {isWinner ? 'AURA SEIZED' : 'MOGGED'}
           </span>
-          <span style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', marginBottom: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {player.name}
           </span>
           
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontSize: '36px', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
+            <span style={{ fontSize: '32px', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
               {player.score.toFixed(1)}
             </span>
             {isWinner && (
-              <span style={{ marginLeft: '10px', color: '#FFCC00', fontSize: '24px' }}>
-                🏆
+              <span style={{ marginLeft: '10px', color: '#ffffff', fontSize: '18px' }}>
+                𓋹
               </span>
             )}
           </div>
@@ -245,26 +252,20 @@ export default function MogResultPage({ params }: PageProps) {
           <div 
             style={{
               position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: mounted ? 'translate(-50%, -50%) rotate(-12deg) scale(1)' : 'translate(-50%, -50%) rotate(-12deg) scale(0)',
-              backgroundColor: 'rgba(204, 0, 0, 0.1)',
-              color: '#EE0000',
-              padding: '8px 16px',
-              border: '4px solid #EE0000',
+              top: '16px',
+              right: '16px',
+              backgroundColor: '#000000',
+              padding: '6px 12px',
+              border: '1px solid #333',
               borderRadius: '8px',
-              fontSize: '28px',
-              fontWeight: 900,
-              fontFamily: 'Impact, Arial Black, sans-serif',
+              fontSize: '12px',
+              fontWeight: 800,
               letterSpacing: '0.1em',
               zIndex: 2,
-              backdropFilter: 'blur(3px)',
-              transition: 'transform 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-              transitionDelay: '300ms',
-              textShadow: '2px 2px 0px rgba(0,0,0,0.8)'
+              color: '#888888'
             }}
           >
-            MOGGED
+            DEFEATED
           </div>
         )}
       </div>
@@ -280,32 +281,32 @@ export default function MogResultPage({ params }: PageProps) {
     
     const delay = `${300 + (index * 100)}ms`;
 
-    const leftColor = p1Won ? '#00FFFF' : '#444444';
-    const rightColor = !p1Won ? '#00FFFF' : '#444444';
+    const leftColor = p1Won ? '#ffffff' : '#444444';
+    const rightColor = !p1Won ? '#ffffff' : '#444444';
 
     return (
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <span style={{ fontSize: '18px', fontWeight: 900, color: leftColor }}>{Math.floor(p1Val)}</span>
-          <span style={{ fontSize: '11px', color: '#ffffff', letterSpacing: '0.15em', flex: 1, textAlign: 'center', fontWeight: 700 }}>{label}</span>
-          <span style={{ fontSize: '18px', fontWeight: 900, color: rightColor }}>{Math.floor(p2Val)}</span>
+          <span style={{ fontSize: '16px', fontWeight: 800, color: leftColor }}>{Math.floor(p1Val)}</span>
+          <span style={{ fontSize: '10px', color: '#888888', letterSpacing: '0.15em', flex: 1, textAlign: 'center', fontWeight: 800 }}>{label}</span>
+          <span style={{ fontSize: '16px', fontWeight: 800, color: rightColor }}>{Math.floor(p2Val)}</span>
         </div>
         
         <div style={{ display: 'flex', gap: '16px' }}>
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', backgroundColor: '#1A1A1A', height: '6px', borderRadius: '3px' }}>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', backgroundColor: '#1A1A1A', height: '4px', borderRadius: '4px' }}>
             <div style={{ 
               height: '100%', 
-              borderRadius: '3px', 
+              borderRadius: '4px', 
               backgroundColor: leftColor,
               width: p1TargetWidth,
               transition: `width 400ms ease ${delay}`
             }} />
           </div>
           
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', backgroundColor: '#1A1A1A', height: '6px', borderRadius: '3px' }}>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', backgroundColor: '#1A1A1A', height: '4px', borderRadius: '4px' }}>
             <div style={{ 
               height: '100%', 
-              borderRadius: '3px', 
+              borderRadius: '4px', 
               backgroundColor: rightColor,
               width: p2TargetWidth,
               transition: `width 400ms ease ${delay}`
@@ -316,30 +317,34 @@ export default function MogResultPage({ params }: PageProps) {
     );
   };
 
+  // Safe fallback to default scores if missing
+  const defScores = localDefenderScore || { jawline: 50, eyes: 50, skin: 50, symmetry: 50 };
+  const chalScores = localChallengerScore || { jawline: 50, eyes: 50, skin: 50, symmetry: 50 };
+
   return (
-    <div style={{ backgroundColor: '#000000', minHeight: '100vh', width: '100%', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ backgroundColor: '#09090B', minHeight: '100vh', width: '100%', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div style={{ maxWidth: '420px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column' }}>
         
         {/* Capturable container */}
-        <div ref={contentRef} style={{ padding: '0 16px', backgroundColor: '#000000' }}>
+        <div ref={contentRef} style={{ padding: '0 16px', backgroundColor: '#09090B' }}>
           
           {/* Header */}
-          <div style={{ marginTop: '20px', marginBottom: '24px', textAlign: 'center' }}>
-            <span style={{ fontSize: '12px', color: '#ffffff', letterSpacing: '0.15em', fontWeight: 600 }}>
+          <div style={{ marginTop: '24px', marginBottom: '24px', textAlign: 'center' }}>
+            <span style={{ fontSize: '11px', color: '#ffffff', letterSpacing: '0.2em', fontWeight: 800 }}>
               MOG BATTLE RESULT
             </span>
           </div>
 
           {/* Cards Layout - Winner left, loser right */}
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
             {renderCard(winnerData, true)}
             {renderCard(loserData, false)}
           </div>
 
-          {/* Winner Line */}
-          <div style={{ textAlign: 'center', margin: '32px 0' }}>
-            <span style={{ fontSize: '26px', fontWeight: 900, color: '#00FFFF', letterSpacing: '0.05em', textShadow: '0 0 12px rgba(0,255,255,0.5)', fontFamily: 'Impact, sans-serif' }}>
-              WINNER: {winnerData.name.toUpperCase()}
+          {/* Winner Text block */}
+          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <span style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em' }}>
+              {winnerData.name.toUpperCase()} WON
             </span>
           </div>
 
@@ -347,67 +352,65 @@ export default function MogResultPage({ params }: PageProps) {
           <div style={{ padding: '0 8px' }}>
             {renderStatRow(
               'JAWLINE', 
-              battle.jawline_challenger, 
-              battle.jawline_defender,
+              defScores.jawline || 0, 
+              chalScores.jawline || 0,
               0
             )}
             {renderStatRow(
               'EYES', 
-              battle.eyes_challenger, 
-              battle.eyes_defender,
+              defScores.eyes || 0, 
+              chalScores.eyes || 0,
               1
             )}
             {renderStatRow(
               'SKIN', 
-              battle.skin_challenger, 
-              battle.skin_defender,
+              defScores.skin || 0, 
+              chalScores.skin || 0,
               2
             )}
             {renderStatRow(
               'SYMMETRY', 
-              battle.symmetry_challenger, 
-              battle.symmetry_defender,
+              defScores.symmetry || 0, 
+              chalScores.symmetry || 0,
               3
             )}
           </div>
         </div>
 
         {/* Share Buttons */}
-        <div style={{ padding: '32px 16px 40px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ padding: '40px 16px 48px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <button 
             onClick={handleShare}
             style={{
-              height: '60px',
+              height: '56px',
               width: '100%',
-              background: 'linear-gradient(to right, #FF2D75, #FF4B2B)',
-              color: '#ffffff',
-              fontSize: '15px',
+              backgroundColor: '#ffffff',
+              color: '#000000',
+              fontSize: '14px',
               fontWeight: 800,
-              letterSpacing: '0.15em',
-              borderRadius: '30px',
+              borderRadius: '28px',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              position: 'relative'
+              transition: 'transform 0.1s'
             }}
           >
-            <div style={{ position: 'absolute', inset: -1, borderRadius: '31px', padding: '1px', background: 'linear-gradient(to right, #FF2D75, #FF4B2B)', zIndex: -1, opacity: 0.6, filter: 'blur(8px)' }} />
-            SHARE THE DUB 👑
+            SHARE RESULT
           </button>
 
           <a 
             href="/"
             style={{
-              height: '60px',
+              height: '56px',
               width: '100%',
               backgroundColor: 'transparent',
               color: '#ffffff',
               fontSize: '14px',
               fontWeight: 700,
-              borderRadius: '30px',
-              border: '2px solid rgba(255,255,255,0.2)',
+              borderRadius: '28px',
+              border: '1px solid rgba(255,255,255,0.15)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -415,7 +418,7 @@ export default function MogResultPage({ params }: PageProps) {
               textDecoration: 'none'
             }}
           >
-            Get your Own Mog battle link
+            Back to Home
           </a>
         </div>
       </div>

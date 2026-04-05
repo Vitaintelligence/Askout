@@ -2,6 +2,11 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder_key";
+const supabase = createClient(supabaseUrl, supabaseKey);
 // Font corporate setup
 
 type Step = "challenge" | "guide";
@@ -15,9 +20,37 @@ export default function MogBattlePage({
     const [mounted, setMounted] = useState(false);
     const [step, setStep] = useState<Step>("challenge");
     const [ticking, setTicking] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const router = useRouter();
 
-    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+        setMounted(true);
+        async function fetchAvatar() {
+            try {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('user_key, avatar_url')
+                    .eq('username', username)
+                    .single();
+
+                if (profile?.avatar_url) {
+                    setAvatarUrl(profile.avatar_url);
+                } else if (profile?.user_key) {
+                    const { data: userProfile } = await supabase
+                        .from('user_profiles')
+                        .select('avatar_url')
+                        .eq('user_id', profile.user_key)
+                        .single();
+                    if (userProfile?.avatar_url) {
+                        setAvatarUrl(userProfile.avatar_url);
+                    }
+                }
+            } catch (e) {
+                console.error("No avatar found", e);
+            }
+        }
+        fetchAvatar();
+    }, [username]);
 
     const handleAcceptChallenge = () => {
         setTicking(true);
@@ -117,12 +150,16 @@ export default function MogBattlePage({
                 {/* Main content */}
                 <div className="flex flex-col items-center text-center gap-6 my-auto">
 
-                    {/* Avatar initials block */}
+                    {/* Avatar block */}
                     <div className="relative">
-                        <div className="w-28 h-28 rounded-[32px] bg-white/[0.04] border border-white/10 flex items-center justify-center">
-                            <span className="text-5xl font-black text-white uppercase">
-                                {username.charAt(0)}
-                            </span>
+                        <div className="w-28 h-28 rounded-[32px] bg-white/[0.04] border border-white/10 flex items-center justify-center overflow-hidden">
+                            {avatarUrl ? (
+                                <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-5xl font-black text-white uppercase">
+                                    {username.charAt(0)}
+                                </span>
+                            )}
                         </div>
                         {/* Teal dot badge */}
                         <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#00FFCC] border-2 border-[#09090B] flex items-center justify-center">

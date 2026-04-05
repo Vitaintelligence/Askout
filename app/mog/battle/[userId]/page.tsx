@@ -51,11 +51,11 @@ export default function MogBattlePage({ params }: PageProps) {
   };
 
   return (
-    <div style={{ backgroundColor: '#000000', position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div className="relative w-full h-[100dvh] bg-[#09090B] overflow-hidden font-sans flex flex-col justify-between">
       
       {/* Toast Notification */}
       {toastMessage && (
-        <div style={{ position: 'absolute', top: '72px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'rgba(255,255,255,0.9)', color: '#000', padding: '12px 24px', borderRadius: '24px', fontSize: '13px', fontWeight: 600, zIndex: 50, whiteSpace: 'nowrap' }}>
+        <div className="absolute top-[96px] left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full text-xs font-bold z-50 whitespace-nowrap shadow-lg">
           {toastMessage}
         </div>
       )}
@@ -67,16 +67,14 @@ export default function MogBattlePage({ params }: PageProps) {
           autoPlay 
           playsInline 
           muted 
-          style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+          className="absolute inset-0 w-full h-full object-cover -scale-x-100"
         />
       ) : (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <p style={{ color: '#ffffff', fontSize: '14px', marginBottom: '24px', textAlign: 'center' }}>
-            Camera access required to battle.
-          </p>
+        <div className="w-full h-full flex flex-col items-center justify-center p-6 bg-[#09090B] z-10 relative">
+          <p className="text-white text-sm mb-6 text-center font-medium">Camera access required to battle.</p>
           <button 
             onClick={() => fileInputRef.current?.click()}
-            style={{ backgroundColor: '#ffffff', color: '#000000', padding: '16px 32px', borderRadius: '12px', fontSize: '14px', fontWeight: 'bold' }}
+            className="bg-white text-black px-8 py-3.5 rounded-full text-sm font-bold active:scale-95 transition-transform"
           >
             Try uploading instead
           </button>
@@ -86,135 +84,91 @@ export default function MogBattlePage({ params }: PageProps) {
             capture="user"
             ref={fileInputRef} 
             onChange={handleFileUpload} 
-            style={{ display: 'none' }} 
+            className="hidden" 
           />
         </div>
       )}
 
-      {/* Top bar overlay */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 10 }}>
+      {/* Top bar overlay (Clean Apple Aesthetic) */}
+      <div className="absolute top-0 inset-x-0 pt-[52px] pb-6 px-6 z-30 flex justify-between items-start pointer-events-none">
+        
+        {/* Back Button */}
         <button 
           onClick={() => router.back()} 
-          style={{ background: 'none', border: 'none', color: '#ffffff', fontSize: '24px', cursor: 'pointer', padding: 0 }}
+          className="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 border border-white/10 text-white active:scale-95 transition-transform pointer-events-auto"
         >
-          ←
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         </button>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ color: '#ffffff', fontSize: '13px', fontWeight: 800, letterSpacing: '0.15em', marginBottom: '8px', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-            MOG BATTLE
-          </span>
-          {challengerAvatarUrl && (
-            <div style={{
-              width: '64px',
-              height: '80px',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              border: '2px solid #FF2D75', // Brand theme border
-              boxShadow: '0 4px 12px rgba(255, 45, 117, 0.4)'
-            }}>
-              <img 
-                src={challengerAvatarUrl} 
-                alt="Challenger" 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+        {/* Floating Opponent Avatar Card */}
+        <div className="flex flex-col items-center relative gap-1 pointer-events-auto">
+          <div className="px-4 py-1.5 rounded-full bg-black/40 border border-white/10">
+             <span className="text-white text-[10px] font-black tracking-[0.2em] uppercase">Mog Battle</span>
+          </div>
+          {challengerAvatarUrl ? (
+            <div className="relative w-16 h-20 rounded-[18px] overflow-hidden border border-white/10 bg-black">
+               <img 
+                 src={challengerAvatarUrl} 
+                 alt="Challenger" 
+                 className="w-full h-full object-cover"
+               />
+            </div>
+          ) : (
+            <div className="relative w-16 h-20 rounded-[18px] overflow-hidden border border-white/10 bg-black flex items-center justify-center">
+               <span className="text-white/30 text-[10px] font-bold">VS</span>
             </div>
           )}
         </div>
         
-        <div style={{ width: '24px' }} /* Placeholder for spacing */ />
+        {/* Placeholder for flex balance */}
+        <div className="w-12"></div>
       </div>
 
-      {/* Face guide overlay */}
+      {/* Face guide overlay (Clean Face ID style) */}
       {!cameraError && (
-        <div style={{ 
-          position: 'absolute', 
-          top: '50%', 
-          left: '50%', 
-          transform: 'translate(-50%, -50%)',
-          width: '60%',
-          maxWidth: '280px',
-          height: '50%',
-          maxHeight: '400px',
-          border: '2px solid rgba(255,255,255,0.3)',
-          borderRadius: '50% / 40%', // Oval shape
-          pointerEvents: 'none',
-          zIndex: 10
-        }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] max-w-[280px] h-[50%] max-h-[400px] border-[1.5px] border-dashed border-white/40 rounded-[100px] pointer-events-none z-10" />
       )}
 
       {/* Bottom bar overlay */}
       {!cameraError && (
-        <div style={{ position: 'absolute', bottom: '40px', left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px', zIndex: 10 }}>
+        <div className="absolute bottom-12 left-0 right-0 flex items-center justify-center gap-10 z-30 px-8">
           
-          {/* Gallery Upload Button */}
+          {/* Gallery Button */}
           <button 
             onClick={() => fileInputRef.current?.click()}
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(255,255,255,0.15)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              cursor: 'pointer',
-              padding: 0
-            }}
+            className="w-12 h-12 rounded-full bg-black/40 border border-white/10 flex justify-center items-center active:scale-95 transition-transform text-white"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="4" ry="4"></rect>
               <circle cx="8.5" cy="8.5" r="1.5"></circle>
               <polyline points="21 15 16 10 5 21"></polyline>
             </svg>
           </button>
-
           <input 
             type="file" 
             accept="image/*" 
             capture="user"
             ref={fileInputRef} 
             onChange={handleFileUpload} 
-            style={{ display: 'none' }} 
+            className="hidden" 
           />
 
+          {/* Capture Button (Native Apple Feel) */}
           {isCapturing ? (
-            <div style={{ width: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div className="spinner" style={{ width: '24px', height: '24px', border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#FF2D75', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '8px' }} />
-              <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: 500 }}>Scanning</span>
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <div className="w-20 h-20 rounded-full border-[3px] border-[#FF2D75] flex justify-center items-center transition-all bg-black/20">
+              <div className="w-6 h-6 rounded-[4px] bg-[#FF2D75]" />
             </div>
           ) : (
             <button 
               onClick={handleCaptureTap}
-              style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '50%',
-                border: '4px solid #ffffff',
-                backgroundColor: 'transparent',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                cursor: 'pointer',
-                padding: 0,
-                boxShadow: '0 0 20px rgba(0,0,0,0.3)'
-              }}
+              className="w-20 h-20 rounded-full border-[3px] border-white flex justify-center items-center active:scale-95 transition-transform bg-black/10"
             >
-              <div style={{ 
-                width: '64px', 
-                height: '64px', 
-                borderRadius: '50%', 
-                backgroundColor: '#FF2D75', // Brand blossom/reddish-orangish 
-                background: 'linear-gradient(135deg, #FF2D75 0%, #FF4B2B 100%)'
-              }} />
+              <div className="w-[66px] h-[66px] rounded-full bg-white" />
             </button>
           )}
 
           {/* Empty spacer to balance the flex layout */}
-          <div style={{ width: '48px', height: '48px' }} />
+          <div className="w-12 h-12" />
           
         </div>
       )}

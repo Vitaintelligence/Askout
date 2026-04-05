@@ -177,6 +177,7 @@ export function useMogBattle(userId: string) {
 
       // Capture local snapshot for result page
       let localSnapshot = '';
+      let opponentImageUrl = null;
       if (mediaSource instanceof HTMLVideoElement) {
         const canvas = document.createElement('canvas');
         canvas.width = mediaSource.videoWidth;
@@ -199,6 +200,28 @@ export function useMogBattle(userId: string) {
         }
       }
       sessionStorage.setItem('mog_latest_snapshot', localSnapshot);
+      sessionStorage.setItem('mog_defender_score', JSON.stringify(defenderScore));
+      sessionStorage.setItem('mog_challenger_score', JSON.stringify(challengerScore));
+
+      // Securely upload anonymous blob up to Supabase to serve the Native App Inbox
+      if (localSnapshot) {
+        try {
+          const res = await fetch(localSnapshot);
+          const blob = await res.blob();
+          const fileName = `${crypto.randomUUID()}.jpg`;
+          const { data: uploadData, error: uploadErr } = await supabase.storage
+            .from('mog_snapshots')
+            .upload(fileName, blob, { contentType: 'image/jpeg' });
+
+          if (!uploadErr && uploadData) {
+             opponentImageUrl = supabase.storage
+               .from('mog_snapshots')
+               .getPublicUrl(uploadData.path).data.publicUrl;
+          }
+        } catch (e) {
+          console.error("Image upload failed securely", e);
+        }
+      }
 
       // Find defender's true UUID (user_key / device_id)
       const { data: userRow } = await supabase
@@ -220,15 +243,8 @@ export function useMogBattle(userId: string) {
           challenger_username: userId,
           challenger_score: defenderScore.total, // Link owner's score
           opponent_score: challengerScore.total,  // Camera user's score
+          opponent_image_url: opponentImageUrl,
           winner: winnerStr,
-          jawline_challenger: defenderScore.jawline,
-          eyes_challenger: defenderScore.eyes,
-          skin_challenger: defenderScore.skin,
-          symmetry_challenger: defenderScore.symmetry,
-          jawline_defender: challengerScore.jawline,
-          eyes_defender: challengerScore.eyes,
-          skin_defender: challengerScore.skin,
-          symmetry_defender: challengerScore.symmetry,
           status: 'completed'
         })
         .select()
