@@ -252,20 +252,25 @@ export default function MogResultPage({ params }: PageProps) {
           <div 
             style={{
               position: 'absolute',
-              top: '16px',
-              right: '16px',
-              backgroundColor: '#000000',
-              padding: '6px 12px',
-              border: '1px solid #333',
+              top: '50%',
+              left: '50%',
+              backgroundColor: 'transparent',
+              padding: '6px 16px',
+              border: '4px solid #FF0055',
               borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: 800,
-              letterSpacing: '0.1em',
-              zIndex: 2,
-              color: '#888888'
+              fontSize: '28px',
+              fontWeight: 900,
+              letterSpacing: '0.05em',
+              zIndex: 10,
+              color: '#FF0055',
+              transform: mounted ? 'translate(-50%, -50%) rotate(-15deg) scale(1)' : 'translate(-50%, -50%) rotate(-15deg) scale(4)',
+              opacity: mounted ? 1 : 0,
+              transition: 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.5) 0.3s, opacity 0.1s ease-in 0.3s',
+              boxShadow: mounted ? '0 0 20px rgba(255,0,85,0.3), inset 0 0 10px rgba(255,0,85,0.3)' : 'none',
+              textShadow: '0 0 10px rgba(255,0,85,0.3)',
             }}
           >
-            DEFEATED
+            MOGGED
           </div>
         )}
       </div>
