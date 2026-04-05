@@ -83,6 +83,7 @@ export default function MogBattlePage({ params }: PageProps) {
           <input 
             type="file" 
             accept="image/*" 
+            capture="user"
             ref={fileInputRef} 
             onChange={handleFileUpload} 
             style={{ display: 'none' }} 
@@ -173,6 +174,7 @@ export default function MogBattlePage({ params }: PageProps) {
           <input 
             type="file" 
             accept="image/*" 
+            capture="user"
             ref={fileInputRef} 
             onChange={handleFileUpload} 
             style={{ display: 'none' }} 
