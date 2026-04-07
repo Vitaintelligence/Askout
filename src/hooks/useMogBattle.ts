@@ -6,6 +6,17 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+/** Convert a 0-100 web score to a tier label matching native app logic (0-10 scale) */
+function scoreTier(score100: number): string {
+  const s = score100 / 10;
+  if (s >= 9.0) return 'S-CLASS';
+  if (s >= 8.0) return 'A-CLASS';
+  if (s >= 7.0) return 'B-CLASS';
+  if (s >= 6.0) return 'C-CLASS';
+  if (s >= 5.0) return 'D-CLASS';
+  return 'E-CLASS';
+}
+
 export function useMogBattle(userId: string) {
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [error, setError] = useState(false);
@@ -201,20 +212,26 @@ export function useMogBattle(userId: string) {
         
       const realChallengerId = userRow?.device_id || userId;
 
-      // 4. Write to Supabase
-      // Using opponent_id to map to the real mog_battles schema
+      // 4. Write to Supabase — matches native mog_battles schema exactly
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const { data, error: insertError } = await supabase
         .from('mog_battles')
         .insert({
           id: crypto.randomUUID(),
-          challenger_id: realChallengerId, // MUST match the Flutter uid for realtime!
-          opponent_id: 'anonymous', 
+          challenger_id: realChallengerId,
+          opponent_id: 'anonymous_web',
           challenger_username: userId,
-          challenger_score: defenderScore.total, // Link owner's score
-          opponent_score: challengerScore.total,  // Camera user's score
+          opponent_username: 'Web User',
+          challenger_score: defenderScore.total / 10,  // web scores 0-100, scale to 0-10
+          opponent_score: challengerScore.total / 10,   // same
+          challenger_tier: scoreTier(defenderScore.total),
+          opponent_tier: scoreTier(challengerScore.total),
           opponent_image_url: opponentImageUrl,
-          winner: winnerStr,
-          status: 'completed'
+          winner_id: defenderWins ? realChallengerId : 'anonymous_web',
+          status: 'completed',
+          share_link: `askout.link/battle/mogbattle/${userId}`,
+          created_at: new Date().toISOString(),
+          expires_at: expiresAt,
         })
         .select()
         .single();
