@@ -4,8 +4,9 @@ import { useEffect, useState, useRef, use } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import html2canvas from 'html2canvas';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key';
+// Initialize Supabase correctly from env
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 type PageProps = {
@@ -47,18 +48,18 @@ export default function MogResultPage({ params }: PageProps) {
 
     async function fetchResult() {
       try {
-        // Fetch battle
+        // Fetch battle result from DB
         const { data: bData, error: bErr } = await supabase
           .from('mog_battles')
           .select('*')
           .eq('id', battleId)
           .single();
 
-        if (bErr || !bData) throw new Error("Battle not found");
+        if (bErr || !bData) throw new Error("Battle result not found");
         
         setBattle(bData);
 
-        // Fetch defender profile directly since no FK relationship
+        // Fetch defender (link owner) profile
         const { data: pData } = await supabase
           .from('profiles')
           .select('username, avatar_url')
@@ -71,7 +72,7 @@ export default function MogResultPage({ params }: PageProps) {
           setDefenderProfile({ username: bData.challenger_username || 'Unknown', avatar_url: null });
         }
       } catch (err) {
-        console.error(err);
+        console.error("Fetch Error:", err);
       } finally {
         setLoading(false);
       }
@@ -80,27 +81,24 @@ export default function MogResultPage({ params }: PageProps) {
     fetchResult();
   }, [battleId]);
 
-  // Handle animations after data loads
+  // Entrance animations
   useEffect(() => {
     if (!loading && battle) {
-      setTimeout(() => setMounted(true), 50);
+      setTimeout(() => setMounted(true), 100);
 
-      // Animate scores
-      const duration = 600;
-      const steps = 30;
+      const targetP1 = (battle.challenger_score || 0) * 10; 
+      const targetP2 = (battle.opponent_score || 0) * 10;   
+
+      // Animate scores counting up
+      const duration = 800;
+      const steps = 40;
       const interval = duration / steps;
       let currentStep = 0;
-
-      // Ensure scores exist in DB else fallback to 50
-      const targetP1 = battle.challenger_score || 0; // P1 = link owner (defender mapped to challenger_score)
-      const targetP2 = battle.opponent_score || 0;   // P2 = camera user (challenger mapped to opponent_score)
 
       const timer = setInterval(() => {
         currentStep++;
         const progress = currentStep / steps;
-        
-        // Easing function: easeOutQuad
-        const ease = progress * (2 - progress);
+        const ease = progress * (2 - progress); // easeOutQuad
         
         setScores({
           p1: Math.floor(targetP1 * ease),
@@ -119,11 +117,10 @@ export default function MogResultPage({ params }: PageProps) {
 
   const handleShare = async () => {
     if (!contentRef.current) return;
-    
     try {
       const canvas = await html2canvas(contentRef.current, {
         backgroundColor: '#000000',
-        scale: 2, // Higher quality
+        scale: 2,
         useCORS: true,
       });
 
@@ -135,10 +132,9 @@ export default function MogResultPage({ params }: PageProps) {
         await navigator.share({
           files: [file],
           title: 'Mog Battle Result',
-          text: 'I just finished a Mog Battle! Can you mog me?'
+          text: 'I just finished a Mog Battle on Maxify! Check my status.'
         });
       } else {
-        // Fallback: download
         const a = document.createElement('a');
         a.href = dataUrl;
         a.download = 'mog-result.png';
@@ -147,127 +143,157 @@ export default function MogResultPage({ params }: PageProps) {
         document.body.removeChild(a);
       }
     } catch (err) {
-      console.error('Error sharing', err);
-      // Fallback
-      alert("Sharing not supported on this device. Screenshot the page instead!");
+      console.error('Share Error:', err);
     }
   };
 
   if (loading) {
-    return <div style={{ backgroundColor: '#000', height: '100vh' }} />;
-  }
-
-  if (!battle) {
     return (
       <div style={{ backgroundColor: '#000', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#fff' }}>Battle not found or expired.</p>
+        <div style={{ width: '40px', height: '40px', border: '3px solid rgba(255,45,85,0.3)', borderTopColor: '#FF2D55', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
-  // P1 = Link owner. P2 = Camera user. 
-  // 'defender' winning means link owner won.
-  const p1Won = battle.winner === 'defender';
-  const p2Won = battle.winner === 'challenger';
+  if (!battle) {
+    return (
+      <div style={{ backgroundColor: '#000', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textAlign: 'center', padding: '20px' }}>
+        <div>
+          <h2 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '8px' }}>UNABLE TO LOAD RESULT</h2>
+          <p style={{ opacity: 0.6 }}>The battle ID may be invalid or expired.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // P1 = Defender (link owner), P2 = Challenger (web camera)
+  // bData.challenger_id is the link owner's ID
+  const p1Won = battle.winner_id === battle.challenger_id;
+  const p2Won = battle.winner_id === battle.opponent_id || battle.winner_id === 'anonymous_web';
 
   const p1Data = {
-    name: defenderProfile?.username || 'PLAYER 1',
-    photo: defenderProfile?.avatar_url || '', // Fallback empty
-    won: p1Won,
-    score: scores.p1
+    name: defenderProfile?.username?.toUpperCase() || 'PLAYER 1',
+    photo: defenderProfile?.avatar_url || '',
+    isWinner: p1Won,
+    score: scores.p1 / 10
   };
 
   const p2Data = {
-    name: 'YOU',
-    photo: localSnapshot || '',
-    won: p2Won,
-    score: scores.p2
+    name: 'PLAYER 2',
+    photo: localSnapshot || battle.opponent_image_url || '',
+    isWinner: p2Won,
+    score: scores.p2 / 10
   };
 
-  const winnerData = p1Won ? p1Data : p2Data;
-  const loserData = p1Won ? p2Data : p1Data;
-
-  const renderCard = (player: any, isWinner: boolean) => {
+  const renderCard = (player: any, isP1: boolean) => {
+    const isWinner = player.isWinner;
+    
     return (
       <div 
         style={{
           flex: 1,
-          backgroundColor: '#111',
-          border: isWinner ? '1.5px solid #ffffff' : '1px solid #333',
-          borderRadius: '24px',
+          backgroundColor: '#131316',
+          border: isWinner ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '28px',
           overflow: 'hidden',
           position: 'relative',
-          padding: 0,
-          aspectRatio: '0.65',
+          aspectRatio: '0.62',
           opacity: mounted ? 1 : 0,
-          transform: mounted ? 'translateY(0)' : 'translateY(16px)',
-          transition: 'all 300ms ease',
+          transform: mounted ? 'scale(1)' : 'scale(0.9)',
+          transition: 'all 500ms cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          boxShadow: isWinner ? '0 0 30px rgba(255,215,0,0.15)' : 'none',
         }}
       >
-        <img 
-          src={player.photo} 
-          alt={player.name}
-          crossOrigin="anonymous"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            filter: isWinner ? 'none' : 'grayscale(100%) opacity(0.6)',
-            backgroundColor: '#111'
-          }}
-        />
+        {/* Photo */}
+        {player.photo ? (
+          <img 
+            src={player.photo} 
+            alt={player.name}
+            crossOrigin="anonymous"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              filter: isWinner ? 'none' : 'grayscale(100%) brightness(0.4)',
+              backgroundColor: '#131316'
+            }}
+          />
+        ) : (
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.1)' }}>
+            <span style={{ fontSize: '40px' }}>?</span>
+          </div>
+        )}
 
-        {/* Text Fade Overlay - No gradients, just solid dark gradient for text legibility */}
+        {/* Text Fade Overlay */}
         <div style={{
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
-          padding: '40px 16px 16px 16px',
-          background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)',
+          padding: '40px 18px 24px 18px',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)',
           display: 'flex',
           flexDirection: 'column',
-          zIndex: 1
         }}>
-          <span style={{ fontSize: '10px', color: isWinner ? '#ffffff' : '#888888', letterSpacing: '0.15em', fontWeight: 900, marginBottom: '4px' }}>
-            {isWinner ? 'AURA SEIZED' : 'MOGGED'}
+          <span style={{ 
+            fontSize: '11px', 
+            color: isWinner ? '#FFD700' : 'rgba(255,255,255,0.4)', 
+            letterSpacing: '0.15em', 
+            fontWeight: 900, 
+            marginBottom: '4px' 
+          }}>
+            {isWinner ? 'MOGGER' : 'MOGGED'}
           </span>
-          <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span style={{ 
+            fontSize: '18px', 
+            fontWeight: 900, 
+            color: '#ffffff', 
+            marginBottom: '12px', 
+            letterSpacing: '-0.02em' 
+          }}>
             {player.name}
           </span>
           
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontSize: '32px', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
+            <span style={{ 
+              fontSize: '42px', 
+              fontWeight: 900, 
+              color: isWinner ? '#FFD700' : '#ffffff', 
+              lineHeight: 1,
+              letterSpacing: '-0.04em'
+            }}>
               {player.score.toFixed(1)}
             </span>
             {isWinner && (
-              <span style={{ marginLeft: '10px', color: '#ffffff', fontSize: '18px' }}>
-                𓋹
+              <span style={{ marginLeft: '8px', color: '#FFD700', fontSize: '24px' }}>
+                🏆
               </span>
             )}
           </div>
         </div>
 
+        {/* "MOGGED" Stamp */}
         {!isWinner && (
           <div 
             style={{
               position: 'absolute',
               top: '50%',
               left: '50%',
-              backgroundColor: 'transparent',
-              padding: '6px 16px',
-              border: '4px solid #FF0055',
-              borderRadius: '8px',
-              fontSize: '28px',
+              backgroundColor: '#FF2D55',
+              padding: '8px 20px',
+              borderRadius: '6px',
+              fontSize: '26px',
               fontWeight: 900,
               letterSpacing: '0.05em',
               zIndex: 10,
-              color: '#FF0055',
-              transform: mounted ? 'translate(-50%, -50%) rotate(-15deg) scale(1)' : 'translate(-50%, -50%) rotate(-15deg) scale(4)',
+              color: '#ffffff',
+              boxShadow: '0 8px 32px rgba(255,45,85,0.4)',
+              transform: mounted 
+                ? 'translate(-50%, -50%) rotate(-15deg) scale(1)' 
+                : 'translate(-50%, -50%) rotate(-15deg) scale(3)',
               opacity: mounted ? 1 : 0,
-              transition: 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.5) 0.3s, opacity 0.1s ease-in 0.3s',
-              boxShadow: mounted ? '0 0 20px rgba(255,0,85,0.3), inset 0 0 10px rgba(255,0,85,0.3)' : 'none',
-              textShadow: '0 0 10px rgba(255,0,85,0.3)',
+              transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.4s, opacity 0.2s ease 0.4s',
             }}
           >
             MOGGED
@@ -278,43 +304,50 @@ export default function MogResultPage({ params }: PageProps) {
   };
 
   const renderStatRow = (label: string, p1Val: number, p2Val: number, index: number) => {
-    p1Val = p1Val || 0;
-    p2Val = p2Val || 0;
-    
-    const p1TargetWidth = mounted ? `${p1Val}%` : '0%';
-    const p2TargetWidth = mounted ? `${p2Val}%` : '0%';
-    
-    const delay = `${300 + (index * 100)}ms`;
+    const p1Percent = mounted ? `${(p1Val || 0)}%` : '0%';
+    const p2Percent = mounted ? `${(p2Val || 0)}%` : '0%';
+    const delay = `${400 + (index * 120)}ms`;
 
-    const leftColor = p1Won ? '#ffffff' : '#444444';
-    const rightColor = !p1Won ? '#ffffff' : '#444444';
+    const activeColor = '#00FFFF'; // Teal/Cyan accent
+    const inactiveColor = '#1A1A1E';
 
     return (
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <span style={{ fontSize: '16px', fontWeight: 800, color: leftColor }}>{Math.floor(p1Val)}</span>
-          <span style={{ fontSize: '10px', color: '#888888', letterSpacing: '0.15em', flex: 1, textAlign: 'center', fontWeight: 800 }}>{label}</span>
-          <span style={{ fontSize: '16px', fontWeight: 800, color: rightColor }}>{Math.floor(p2Val)}</span>
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <span style={{ fontSize: '18px', fontWeight: 900, color: p1Won ? activeColor : '#ffffff', width: '35px' }}>{Math.floor(p1Val)}</span>
+          <span style={{ 
+            fontSize: '11px', 
+            color: 'rgba(255,255,255,0.5)', 
+            letterSpacing: '0.22em', 
+            flex: 1, 
+            textAlign: 'center', 
+            fontWeight: 800 
+          }}>
+            {label} {p1Val > p2Val ? '←' : p2Val > p1Val ? '→' : ''}
+          </span>
+          <span style={{ fontSize: '18px', fontWeight: 900, color: p2Won ? activeColor : '#ffffff', width: '35px', textAlign: 'right' }}>{Math.floor(p2Val)}</span>
         </div>
         
-        <div style={{ display: 'flex', gap: '16px' }}>
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', backgroundColor: '#1A1A1A', height: '4px', borderRadius: '4px' }}>
+        <div style={{ display: 'flex', gap: '20px' }}>
+          {/* P1 bar (grows from right to left) */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', backgroundColor: inactiveColor, height: '6px', borderRadius: '100px', overflow: 'hidden' }}>
             <div style={{ 
               height: '100%', 
-              borderRadius: '4px', 
-              backgroundColor: leftColor,
-              width: p1TargetWidth,
-              transition: `width 400ms ease ${delay}`
+              borderRadius: '100px', 
+              backgroundColor: p1Won ? activeColor : 'rgba(255,255,255,0.15)',
+              width: p1Percent,
+              transition: `width 600ms cubic-bezier(0.23, 1, 0.32, 1) ${delay}`
             }} />
           </div>
           
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', backgroundColor: '#1A1A1A', height: '4px', borderRadius: '4px' }}>
+          {/* P2 bar (grows from left to right) */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', backgroundColor: inactiveColor, height: '6px', borderRadius: '100px', overflow: 'hidden' }}>
             <div style={{ 
               height: '100%', 
-              borderRadius: '4px', 
-              backgroundColor: rightColor,
-              width: p2TargetWidth,
-              transition: `width 400ms ease ${delay}`
+              borderRadius: '100px', 
+              backgroundColor: p2Won ? activeColor : 'rgba(255,255,255,0.15)',
+              width: p2Percent,
+              transition: `width 600ms cubic-bezier(0.23, 1, 0.32, 1) ${delay}`
             }} />
           </div>
         </div>
@@ -322,109 +355,97 @@ export default function MogResultPage({ params }: PageProps) {
     );
   };
 
-  // Safe fallback to default scores if missing
   const defScores = localDefenderScore || { jawline: 50, eyes: 50, skin: 50, symmetry: 50 };
-  const chalScores = localChallengerScore || { jawline: 50, eyes: 50, skin: 50, symmetry: 50 };
+  const chalScores = localChallengerScore || { jawline: 55, eyes: 55, skin: 55, symmetry: 55 }; // Slight dummy if missing
 
   return (
-    <div style={{ backgroundColor: '#09090B', minHeight: '100vh', width: '100%', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <div style={{ maxWidth: '420px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ backgroundColor: '#09090B', minHeight: '100vh', width: '100%', fontFamily: 'Inter, system-ui, -apple-system, sans-serif', color: '#fff' }}>
+      <div style={{ maxWidth: '440px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column' }}>
         
-        {/* Capturable container */}
-        <div ref={contentRef} style={{ padding: '0 16px', backgroundColor: '#09090B' }}>
+        {/* Screenshot Container */}
+        <div ref={contentRef} style={{ padding: '0 20px', backgroundColor: '#09090B' }}>
           
-          {/* Header */}
-          <div style={{ marginTop: '24px', marginBottom: '24px', textAlign: 'center' }}>
-            <span style={{ fontSize: '11px', color: '#ffffff', letterSpacing: '0.2em', fontWeight: 800 }}>
+          {/* Header Title */}
+          <div style={{ paddingTop: '32px', marginBottom: '32px', textAlign: 'center' }}>
+            <span style={{ fontSize: '12px', letterSpacing: '0.3em', fontWeight: 900, opacity: 0.8 }}>
               MOG BATTLE RESULT
             </span>
           </div>
 
-          {/* Cards Layout - Winner left, loser right */}
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
-            {renderCard(winnerData, true)}
-            {renderCard(loserData, false)}
+          {/* Cards */}
+          <div style={{ display: 'flex', gap: '14px', marginBottom: '40px' }}>
+            {renderCard(p1Data, true)}
+            {renderCard(p2Data, false)}
           </div>
 
-          {/* Winner Text block */}
-          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <span style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em' }}>
-              {winnerData.name.toUpperCase()} WON
+          {/* Winner Teal Text */}
+          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <span style={{ 
+              fontSize: '22px', 
+              fontWeight: 900, 
+              color: '#00FFFF', 
+              letterSpacing: '0.05em',
+              textShadow: '0 0 20px rgba(0,255,255,0.3)'
+            }}>
+              WINNER: {p1Won ? p1Data.name : p2Data.name}
             </span>
           </div>
 
-          {/* Stat Rows */}
-          <div style={{ padding: '0 8px' }}>
-            {renderStatRow(
-              'JAWLINE', 
-              defScores.jawline || 0, 
-              chalScores.jawline || 0,
-              0
-            )}
-            {renderStatRow(
-              'EYES', 
-              defScores.eyes || 0, 
-              chalScores.eyes || 0,
-              1
-            )}
-            {renderStatRow(
-              'SKIN', 
-              defScores.skin || 0, 
-              chalScores.skin || 0,
-              2
-            )}
-            {renderStatRow(
-              'SYMMETRY', 
-              defScores.symmetry || 0, 
-              chalScores.symmetry || 0,
-              3
-            )}
+          {/* Attributes */}
+          <div style={{ padding: '0 10px' }}>
+            {renderStatRow('JAWLINE', defScores.jawline, chalScores.jawline, 0)}
+            {renderStatRow('EYES', defScores.eyes, chalScores.eyes, 1)}
+            {renderStatRow('SKIN', defScores.skin, chalScores.skin, 2)}
+            {renderStatRow('SYMMETRY', defScores.symmetry, chalScores.symmetry, 3)}
           </div>
         </div>
 
-        {/* Share Buttons */}
-        <div style={{ padding: '40px 16px 48px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Buttons Section */}
+        <div style={{ padding: '48px 20px 60px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <button 
-            onClick={handleShare}
+            onClick={() => window.location.href = `/mog/battle/${battle.challenger_username}`}
             style={{
-              height: '56px',
+              height: '62px',
               width: '100%',
-              backgroundColor: '#ffffff',
-              color: '#000000',
-              fontSize: '14px',
-              fontWeight: 800,
-              borderRadius: '28px',
+              background: 'linear-gradient(135deg, #FF2D55 0%, #FF0055 100%)',
+              color: '#ffffff',
+              fontSize: '15px',
+              fontWeight: 900,
+              borderRadius: '100px',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'transform 0.1s'
+              letterSpacing: '0.05em',
+              boxShadow: '0 12px 30px rgba(255,45,85,0.4)',
+              transition: 'transform 0.2s active'
             }}
           >
-            SHARE RESULT
+            FIGHT AGAIN ⚔️
           </button>
 
-          <a 
-            href="/"
+          <button 
+            onClick={handleShare}
             style={{
-              height: '56px',
+              height: '62px',
               width: '100%',
-              backgroundColor: 'transparent',
+              background: 'linear-gradient(135deg, #FF2079 0%, #FF2D55 100%)',
               color: '#ffffff',
-              fontSize: '14px',
-              fontWeight: 700,
-              borderRadius: '28px',
-              border: '1px solid rgba(255,255,255,0.15)',
+              fontSize: '15px',
+              fontWeight: 900,
+              borderRadius: '100px',
+              border: 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              textDecoration: 'none'
+              letterSpacing: '0.05em',
+              boxShadow: '0 12px 30px rgba(255,32,121,0.25)',
             }}
           >
-            Back to Home
-          </a>
+            SHARE THE DUB 👑
+          </button>
         </div>
       </div>
     </div>

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { loadModels, scoreFace } from '@/src/lib/mogScoring';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 /** Convert a 0-100 web score to a tier label matching native app logic (0-10 scale) */
@@ -24,6 +24,17 @@ export function useMogBattle(userId: string) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [battleResult, setBattleResult] = useState<string | null>(null);
   const [challengerAvatarUrl, setChallengerAvatarUrl] = useState<string | null>(null);
+
+  // 1. Ensure this web traveler has a consistent UUID for Supabase compatibility
+  const [webUserId] = useState(() => {
+    if (typeof window === 'undefined') return crypto.randomUUID();
+    let id = localStorage.getItem('maxify_web_uid');
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem('maxify_web_uid', id);
+    }
+    return id;
+  });
 
   // Load models on mount
   useEffect(() => {
@@ -219,7 +230,7 @@ export function useMogBattle(userId: string) {
         .insert({
           id: crypto.randomUUID(),
           challenger_id: realChallengerId,
-          opponent_id: 'anonymous_web',
+          opponent_id: webUserId,
           challenger_username: userId,
           opponent_username: 'Web User',
           challenger_score: defenderScore.total / 10,  // web scores 0-100, scale to 0-10
@@ -227,7 +238,7 @@ export function useMogBattle(userId: string) {
           challenger_tier: scoreTier(defenderScore.total),
           opponent_tier: scoreTier(challengerScore.total),
           opponent_image_url: opponentImageUrl,
-          winner_id: defenderWins ? realChallengerId : 'anonymous_web',
+          winner_id: defenderWins ? realChallengerId : webUserId,
           status: 'completed',
           share_link: `askout.link/battle/mogbattle/${userId}`,
           created_at: new Date().toISOString(),
