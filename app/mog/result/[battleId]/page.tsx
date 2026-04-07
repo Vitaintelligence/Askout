@@ -61,7 +61,7 @@ export default function MogResultPage({ params }: PageProps) {
         if (bErr || !bData) throw new Error("Battle result not found");
         setBattle(bData);
 
-        let finalAvatar = null;
+        let finalAvatar = bData.challenger_image_url || null;
         let finalUsername = bData.challenger_username;
         let targetUuid = bData.challenger_id;
 
@@ -89,8 +89,8 @@ export default function MogResultPage({ params }: PageProps) {
            }
         }
 
-        // Only query deep image tables if we successfully found a valid UUID
-        if (isValidUUID(targetUuid)) {
+        // Only query deep image tables if we successfully found a valid UUID AND we don't already have an avatar
+        if (isValidUUID(targetUuid) && !finalAvatar) {
           // 1. Try public profile
           const { data: pData } = await supabase
             .from('profiles')
