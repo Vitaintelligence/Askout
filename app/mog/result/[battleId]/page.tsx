@@ -22,7 +22,7 @@ export default function MogResultPage({ params }: PageProps) {
 
   const [loading, setLoading] = useState(true);
   const [battle, setBattle] = useState<any>(null);
-  const [defenderProfile, setDefenderProfile] = useState<any>(null);
+  const [defenderData, setDefenderData] = useState<{ username: string; avatar: string | null }>({ username: 'PLAYER 1', avatar: null });
   const [localSnapshot, setLocalSnapshot] = useState<string | null>(null);
   const [localChallengerScore, setLocalChallengerScore] = useState<any>(null);
   const [localDefenderScore, setLocalDefenderScore] = useState<any>(null);
@@ -59,18 +59,42 @@ export default function MogResultPage({ params }: PageProps) {
         
         setBattle(bData);
 
-        // Fetch defender (link owner) profile
+        // --- CASCADING PHOTO LOOKUP FOR DEFENDER (Link Owner) ---
+        // 1. Try public profile
         const { data: pData } = await supabase
           .from('profiles')
           .select('username, avatar_url')
-          .eq('username', bData.challenger_username)
+          .eq('user_key', bData.challenger_id)
           .single();
           
-        if (pData) {
-          setDefenderProfile(pData);
-        } else {
-          setDefenderProfile({ username: bData.challenger_username || 'Unknown', avatar_url: null });
+        let finalAvatar = pData?.avatar_url;
+        let finalUsername = pData?.username || bData.challenger_username;
+
+        // 2. Fallback to rate_me_profiles (scan backup)
+        if (!finalAvatar) {
+          const { data: rmData } = await supabase
+            .from('rate_me_profiles')
+            .select('last_scan_image_url')
+            .eq('anonymous_id', bData.challenger_id)
+            .single();
+          if (rmData?.last_scan_image_url) finalAvatar = rmData.last_scan_image_url;
         }
+
+        // 3. Last resort fallback to user_profiles
+        if (!finalAvatar) {
+          const { data: upData } = await supabase
+            .from('user_profiles')
+            .select('avatar_url')
+            .eq('user_id', bData.challenger_id)
+            .single();
+          if (upData?.avatar_url) finalAvatar = upData.avatar_url;
+        }
+        
+        setDefenderData({ 
+           username: finalUsername?.toUpperCase() || 'PLAYER 1', 
+           avatar: finalAvatar 
+        });
+
       } catch (err) {
         console.error("Fetch Error:", err);
       } finally {
@@ -90,15 +114,15 @@ export default function MogResultPage({ params }: PageProps) {
       const targetP2 = (battle.opponent_score || 0) * 10;   
 
       // Animate scores counting up
-      const duration = 800;
-      const steps = 40;
+      const duration = 1200; // Slower, more "brutal" build up
+      const steps = 60;
       const interval = duration / steps;
       let currentStep = 0;
 
       const timer = setInterval(() => {
         currentStep++;
         const progress = currentStep / steps;
-        const ease = progress * (2 - progress); // easeOutQuad
+        const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress); // easeOutExpo
         
         setScores({
           p1: Math.floor(targetP1 * ease),
@@ -120,7 +144,7 @@ export default function MogResultPage({ params }: PageProps) {
     try {
       const canvas = await html2canvas(contentRef.current, {
         backgroundColor: '#000000',
-        scale: 2,
+        scale: 3,
         useCORS: true,
       });
 
@@ -132,7 +156,7 @@ export default function MogResultPage({ params }: PageProps) {
         await navigator.share({
           files: [file],
           title: 'Mog Battle Result',
-          text: 'I just finished a Mog Battle on Maxify! Check my status.'
+          text: 'Join the Arena and get Mogged'
         });
       } else {
         const a = document.createElement('a');
@@ -156,53 +180,43 @@ export default function MogResultPage({ params }: PageProps) {
     );
   }
 
-  if (!battle) {
-    return (
-      <div style={{ backgroundColor: '#000', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textAlign: 'center', padding: '20px' }}>
-        <div>
-          <h2 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '8px' }}>UNABLE TO LOAD RESULT</h2>
-          <p style={{ opacity: 0.6 }}>The battle ID may be invalid or expired.</p>
-        </div>
-      </div>
-    );
-  }
+  if (!battle) return null;
 
   // P1 = Defender (link owner), P2 = Challenger (web camera)
-  // bData.challenger_id is the link owner's ID
   const p1Won = battle.winner_id === battle.challenger_id;
-  const p2Won = battle.winner_id === battle.opponent_id || battle.winner_id === 'anonymous_web';
+  const p2Won = !p1Won;
 
   const p1Data = {
-    name: defenderProfile?.username?.toUpperCase() || 'PLAYER 1',
-    photo: defenderProfile?.avatar_url || '',
+    name: defenderData.username,
+    photo: defenderData.avatar,
     isWinner: p1Won,
     score: scores.p1 / 10
   };
 
   const p2Data = {
-    name: 'PLAYER 2',
+    name: battle.opponent_username?.toUpperCase() || 'PLAYER 2',
     photo: localSnapshot || battle.opponent_image_url || '',
     isWinner: p2Won,
     score: scores.p2 / 10
   };
 
-  const renderCard = (player: any, isP1: boolean) => {
+  const renderCard = (player: any) => {
     const isWinner = player.isWinner;
     
     return (
       <div 
         style={{
           flex: 1,
-          backgroundColor: '#131316',
-          border: isWinner ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '28px',
+          backgroundColor: '#000',
+          border: isWinner ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '24px',
           overflow: 'hidden',
           position: 'relative',
-          aspectRatio: '0.62',
+          aspectRatio: '0.64',
           opacity: mounted ? 1 : 0,
-          transform: mounted ? 'scale(1)' : 'scale(0.9)',
-          transition: 'all 500ms cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-          boxShadow: isWinner ? '0 0 30px rgba(255,215,0,0.15)' : 'none',
+          transform: mounted ? 'translateY(0)' : 'translateY(20px)',
+          transition: 'all 700ms cubic-bezier(0.19, 1, 0.22, 1)',
+          boxShadow: isWinner ? '0 0 40px rgba(255,215,0,0.1)' : 'none',
         }}
       >
         {/* Photo */}
@@ -215,85 +229,89 @@ export default function MogResultPage({ params }: PageProps) {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              filter: isWinner ? 'none' : 'grayscale(100%) brightness(0.4)',
+              filter: isWinner ? 'none' : 'grayscale(100%) brightness(0.6)',
               backgroundColor: '#131316'
             }}
           />
         ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.1)' }}>
-            <span style={{ fontSize: '40px' }}>?</span>
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.05)' }}>
+            <span style={{ fontSize: '10px', fontWeight: 900, fontFamily: 'Syne' }}>PHOTO MISSING</span>
           </div>
         )}
 
         {/* Text Fade Overlay */}
         <div style={{
           position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: '40px 18px 24px 18px',
-          background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)',
+          bottom: 0, left: 0, right: 0,
+          padding: '40px 16px 20px 16px',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)',
           display: 'flex',
           flexDirection: 'column',
         }}>
           <span style={{ 
-            fontSize: '11px', 
+            fontSize: '10px', 
+            fontFamily: 'Syne',
             color: isWinner ? '#FFD700' : 'rgba(255,255,255,0.4)', 
-            letterSpacing: '0.15em', 
-            fontWeight: 900, 
+            letterSpacing: '0.2em', 
+            fontWeight: 800, 
             marginBottom: '4px' 
           }}>
             {isWinner ? 'MOGGER' : 'MOGGED'}
           </span>
           <span style={{ 
-            fontSize: '18px', 
-            fontWeight: 900, 
+            fontSize: '16px', 
+            fontFamily: 'Syne',
+            fontWeight: 800, 
             color: '#ffffff', 
-            marginBottom: '12px', 
-            letterSpacing: '-0.02em' 
+            marginBottom: '10px', 
+            letterSpacing: '-0.02em',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
           }}>
             {player.name}
           </span>
           
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span style={{ 
-              fontSize: '42px', 
-              fontWeight: 900, 
+              fontSize: '44px', 
+              fontFamily: 'Syne',
+              fontWeight: 800, 
               color: isWinner ? '#FFD700' : '#ffffff', 
               lineHeight: 1,
-              letterSpacing: '-0.04em'
+              letterSpacing: '-0.05em'
             }}>
               {player.score.toFixed(1)}
             </span>
             {isWinner && (
-              <span style={{ marginLeft: '8px', color: '#FFD700', fontSize: '24px' }}>
-                🏆
-              </span>
+              <span style={{ marginLeft: '6px', fontSize: '20px' }}>🏆</span>
             )}
           </div>
         </div>
 
-        {/* "MOGGED" Stamp */}
+        {/* "MOGGED" Stamp - Brutalist Style */}
         {!isWinner && (
           <div 
             style={{
               position: 'absolute',
-              top: '50%',
+              top: '40%',
               left: '50%',
-              backgroundColor: '#FF2D55',
-              padding: '8px 20px',
-              borderRadius: '6px',
-              fontSize: '26px',
-              fontWeight: 900,
+              backgroundColor: '#000000',
+              border: '3px solid #FF2D55',
+              padding: '10px 18px',
+              borderRadius: '2px',
+              fontSize: '24px',
+              fontWeight: 800,
+              fontFamily: 'Syne',
               letterSpacing: '0.05em',
               zIndex: 10,
               color: '#ffffff',
-              boxShadow: '0 8px 32px rgba(255,45,85,0.4)',
+              boxShadow: '0 0 40px rgba(255,45,85,0.3)',
               transform: mounted 
-                ? 'translate(-50%, -50%) rotate(-15deg) scale(1)' 
-                : 'translate(-50%, -50%) rotate(-15deg) scale(3)',
+                ? 'translate(-50%, -50%) rotate(-12deg) scale(1)' 
+                : 'translate(-50%, -50%) rotate(-12deg) scale(4)',
               opacity: mounted ? 1 : 0,
-              transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.4s, opacity 0.2s ease 0.4s',
+              transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s, opacity 0.2s ease 0.6s',
             }}
           >
             MOGGED
@@ -308,46 +326,45 @@ export default function MogResultPage({ params }: PageProps) {
     const p2Percent = mounted ? `${(p2Val || 0)}%` : '0%';
     const delay = `${400 + (index * 120)}ms`;
 
-    const activeColor = '#00FFFF'; // Teal/Cyan accent
+    const activeColor = '#00FFFF';
     const inactiveColor = '#1A1A1E';
 
     return (
-      <div style={{ marginBottom: '28px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <span style={{ fontSize: '18px', fontWeight: 900, color: p1Won ? activeColor : '#ffffff', width: '35px' }}>{Math.floor(p1Val)}</span>
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <span style={{ fontSize: '16px', fontFamily: 'Syne', fontWeight: 800, color: p1Won ? activeColor : '#ffffff', width: '35px' }}>{Math.floor(p1Val)}</span>
           <span style={{ 
-            fontSize: '11px', 
-            color: 'rgba(255,255,255,0.5)', 
-            letterSpacing: '0.22em', 
+            fontSize: '9px', 
+            fontFamily: 'Syne',
+            color: 'rgba(255,255,255,0.3)', 
+            letterSpacing: '0.25em', 
             flex: 1, 
             textAlign: 'center', 
             fontWeight: 800 
           }}>
-            {label} {p1Val > p2Val ? '←' : p2Val > p1Val ? '→' : ''}
+            {label}
           </span>
-          <span style={{ fontSize: '18px', fontWeight: 900, color: p2Won ? activeColor : '#ffffff', width: '35px', textAlign: 'right' }}>{Math.floor(p2Val)}</span>
+          <span style={{ fontSize: '16px', fontFamily: 'Syne', fontWeight: 800, color: p2Won ? activeColor : '#ffffff', width: '35px', textAlign: 'right' }}>{Math.floor(p2Val)}</span>
         </div>
         
-        <div style={{ display: 'flex', gap: '20px' }}>
-          {/* P1 bar (grows from right to left) */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', backgroundColor: inactiveColor, height: '6px', borderRadius: '100px', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          {/* P1 bar */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', backgroundColor: inactiveColor, height: '5px', borderRadius: '100px', overflow: 'hidden' }}>
             <div style={{ 
               height: '100%', 
-              borderRadius: '100px', 
-              backgroundColor: p1Won ? activeColor : 'rgba(255,255,255,0.15)',
+              backgroundColor: p1Won ? activeColor : 'rgba(255,255,255,0.1)',
               width: p1Percent,
-              transition: `width 600ms cubic-bezier(0.23, 1, 0.32, 1) ${delay}`
+              transition: `width 1000ms cubic-bezier(0.19, 1, 0.22, 1) ${delay}`
             }} />
           </div>
           
-          {/* P2 bar (grows from left to right) */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', backgroundColor: inactiveColor, height: '6px', borderRadius: '100px', overflow: 'hidden' }}>
+          {/* P2 bar */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', backgroundColor: inactiveColor, height: '5px', borderRadius: '100px', overflow: 'hidden' }}>
             <div style={{ 
               height: '100%', 
-              borderRadius: '100px', 
-              backgroundColor: p2Won ? activeColor : 'rgba(255,255,255,0.15)',
+              backgroundColor: p2Won ? activeColor : 'rgba(255,255,255,0.1)',
               width: p2Percent,
-              transition: `width 600ms cubic-bezier(0.23, 1, 0.32, 1) ${delay}`
+              transition: `width 1000ms cubic-bezier(0.19, 1, 0.22, 1) ${delay}`
             }} />
           </div>
         </div>
@@ -356,36 +373,39 @@ export default function MogResultPage({ params }: PageProps) {
   };
 
   const defScores = localDefenderScore || { jawline: 50, eyes: 50, skin: 50, symmetry: 50 };
-  const chalScores = localChallengerScore || { jawline: 55, eyes: 55, skin: 55, symmetry: 55 }; // Slight dummy if missing
+  const chalScores = localChallengerScore || { jawline: 55, eyes: 55, skin: 55, symmetry: 55 };
 
   return (
-    <div style={{ backgroundColor: '#09090B', minHeight: '100vh', width: '100%', fontFamily: 'Inter, system-ui, -apple-system, sans-serif', color: '#fff' }}>
-      <div style={{ maxWidth: '440px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ backgroundColor: '#000', minHeight: '100vh', width: '100%', fontFamily: "'Outfit', sans-serif", color: '#fff', display: 'flex', justifyContent: 'center' }}>
+      
+      {/* PHONE UI CONTAINER */}
+      <div style={{ maxWidth: '440px', width: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         
-        {/* Screenshot Container */}
-        <div ref={contentRef} style={{ padding: '0 20px', backgroundColor: '#09090B' }}>
+        {/* Screenshot Content container */}
+        <div ref={contentRef} style={{ padding: '0 20px', backgroundColor: '#000' }}>
           
-          {/* Header Title */}
+          {/* Header */}
           <div style={{ paddingTop: '32px', marginBottom: '32px', textAlign: 'center' }}>
-            <span style={{ fontSize: '12px', letterSpacing: '0.3em', fontWeight: 900, opacity: 0.8 }}>
+            <span style={{ fontSize: '11px', fontFamily: 'Syne', letterSpacing: '0.4em', fontWeight: 800, opacity: 0.6 }}>
               MOG BATTLE RESULT
             </span>
           </div>
 
           {/* Cards */}
-          <div style={{ display: 'flex', gap: '14px', marginBottom: '40px' }}>
-            {renderCard(p1Data, true)}
-            {renderCard(p2Data, false)}
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+            {renderCard(p1Data)}
+            {renderCard(p2Data)}
           </div>
 
           {/* Winner Teal Text */}
-          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <span style={{ 
-              fontSize: '22px', 
-              fontWeight: 900, 
+              fontSize: '20px', 
+              fontFamily: 'Syne',
+              fontWeight: 800, 
               color: '#00FFFF', 
               letterSpacing: '0.05em',
-              textShadow: '0 0 20px rgba(0,255,255,0.3)'
+              textShadow: '0 0 25px rgba(0,255,255,0.4)'
             }}>
               WINNER: {p1Won ? p1Data.name : p2Data.name}
             </span>
@@ -401,17 +421,18 @@ export default function MogResultPage({ params }: PageProps) {
         </div>
 
         {/* Buttons Section */}
-        <div style={{ padding: '48px 20px 60px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ padding: '40px 20px 60px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <button 
             onClick={() => window.location.href = `/mog/battle/${battle.challenger_username}`}
             style={{
-              height: '62px',
+              height: '64px',
               width: '100%',
               background: 'linear-gradient(135deg, #FF2D55 0%, #FF0055 100%)',
               color: '#ffffff',
               fontSize: '15px',
-              fontWeight: 900,
-              borderRadius: '100px',
+              fontFamily: 'Syne',
+              fontWeight: 800,
+              borderRadius: '16px',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
@@ -419,7 +440,6 @@ export default function MogResultPage({ params }: PageProps) {
               justifyContent: 'center',
               letterSpacing: '0.05em',
               boxShadow: '0 12px 30px rgba(255,45,85,0.4)',
-              transition: 'transform 0.2s active'
             }}
           >
             FIGHT AGAIN ⚔️
@@ -428,20 +448,20 @@ export default function MogResultPage({ params }: PageProps) {
           <button 
             onClick={handleShare}
             style={{
-              height: '62px',
+              height: '64px',
               width: '100%',
-              background: 'linear-gradient(135deg, #FF2079 0%, #FF2D55 100%)',
+              background: 'linear-gradient(135deg, #1C1C1E 0%, #000000 100%)',
               color: '#ffffff',
               fontSize: '15px',
-              fontWeight: 900,
-              borderRadius: '100px',
-              border: 'none',
+              fontFamily: 'Syne',
+              fontWeight: 800,
+              borderRadius: '16px',
+              border: '1px solid rgba(255,255,255,0.1)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               letterSpacing: '0.05em',
-              boxShadow: '0 12px 30px rgba(255,32,121,0.25)',
             }}
           >
             SHARE THE DUB 👑
