@@ -60,14 +60,14 @@ export default function MogBattlePage({ params }: PageProps) {
   };
 
   return (
-    <div style={{ backgroundColor: '#000', minHeight: '100dvh', width: '100%', display: 'flex', justifyContent: 'center', fontFamily: "'Outfit', sans-serif" }}>
+    <div style={{ backgroundColor: '#000', minHeight: '100dvh', width: '100%', display: 'flex', justifyContent: 'center', fontFamily: 'Inter, -apple-system, sans-serif' }}>
       
       {/* PHONE UI CONTAINER */}
       <div style={{ maxWidth: '440px', width: '100%', display: 'flex', flexDirection: 'column', position: 'relative', backgroundColor: '#000', overflow: 'hidden' }}>
         
         {/* Toast Notification */}
         {toastMessage && (
-          <div style={{ position: 'absolute', top: '96px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#fff', color: '#000', padding: '12px 24px', borderRadius: '100px', fontSize: '11px', fontWeight: 900, zIndex: 50, whiteSpace: 'nowrap', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', fontFamily: 'Syne' }}>
+          <div style={{ position: 'absolute', top: '96px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#fff', color: '#000', padding: '12px 24px', borderRadius: '100px', fontSize: '11px', fontWeight: 900, zIndex: 50, whiteSpace: 'nowrap', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', fontFamily: 'Inter' }}>
             {toastMessage}
           </div>
         )}
@@ -84,7 +84,7 @@ export default function MogBattlePage({ params }: PageProps) {
 
         {/* Header Title */}
         <div style={{ textAlign: 'center', padding: '0 24px', marginBottom: '20px' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 800, fontFamily: 'Syne', letterSpacing: '-0.04em', lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 800, fontFamily: 'Inter', letterSpacing: '-0.04em', lineHeight: 1.1 }}>
             ARE YOU<br/><span style={{ color: '#FF2D55' }}>MOGGING?</span>
           </h1>
         </div>
@@ -102,7 +102,7 @@ export default function MogBattlePage({ params }: PageProps) {
                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
                        <polyline points="21 15 16 10 5 21"></polyline>
                    </svg>
-                   <p style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'Syne', letterSpacing: '0.02em' }}>UPLOAD A PHOTO TO<br/>START THE MOG BATTLE</p>
+                   <p style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'Inter', letterSpacing: '0.02em' }}>UPLOAD A PHOTO TO<br/>START THE MOG BATTLE</p>
                </div>
             )}
         </div>
@@ -117,7 +117,7 @@ export default function MogBattlePage({ params }: PageProps) {
               <>
                  <button 
                    onClick={() => cameraInputRef.current?.click()}
-                   style={{ width: '100%', backgroundColor: '#fff', color: '#000', borderRadius: '16px', padding: '20px', fontWeight: 800, fontSize: '17px', fontFamily: 'Syne', border: 'none', cursor: 'pointer' }}
+                   style={{ width: '100%', backgroundColor: '#fff', color: '#000', borderRadius: '16px', padding: '20px', fontWeight: 800, fontSize: '17px', fontFamily: 'Inter', border: 'none', cursor: 'pointer' }}
                  >
                    TAKE PHOTO
                  </button>
@@ -125,7 +125,7 @@ export default function MogBattlePage({ params }: PageProps) {
 
                  <button 
                    onClick={() => galleryInputRef.current?.click()}
-                   style={{ width: '100%', backgroundColor: '#2C2C2E', color: '#fff', borderRadius: '16px', padding: '20px', fontWeight: 800, fontSize: '17px', fontFamily: 'Syne', border: 'none', cursor: 'pointer' }}
+                   style={{ width: '100%', backgroundColor: '#2C2C2E', color: '#fff', borderRadius: '16px', padding: '20px', fontWeight: 800, fontSize: '17px', fontFamily: 'Inter', border: 'none', cursor: 'pointer' }}
                  >
                    PHOTO LIBRARY
                  </button>
@@ -134,7 +134,7 @@ export default function MogBattlePage({ params }: PageProps) {
                  {/* APP CTA */}
                  <button 
                    onClick={handleOpenApp}
-                   style={{ width: '100%', backgroundColor: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', borderRadius: '16px', padding: '16px', fontWeight: 800, fontSize: '14px', fontFamily: 'Syne', cursor: 'pointer', marginTop: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                   style={{ width: '100%', backgroundColor: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', borderRadius: '16px', padding: '16px', fontWeight: 800, fontSize: '14px', fontFamily: 'Inter', cursor: 'pointer', marginTop: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
                  >
                    BATTLE IN MAXIFY APP 🔥
                  </button>
@@ -144,7 +144,7 @@ export default function MogBattlePage({ params }: PageProps) {
                  <button 
                    onClick={handleBattleNow}
                    disabled={isCapturing || isLoadingModels}
-                   style={{ width: '100%', backgroundColor: '#fff', color: '#000', borderRadius: '16px', padding: '20px', fontWeight: 900, fontSize: '19px', fontFamily: 'Syne', border: 'none', cursor: 'pointer', opacity: (isCapturing || isLoadingModels) ? 0.5 : 1 }}
+                   style={{ width: '100%', backgroundColor: '#fff', color: '#000', borderRadius: '16px', padding: '20px', fontWeight: 900, fontSize: '19px', fontFamily: 'Inter', border: 'none', cursor: 'pointer', opacity: (isCapturing || isLoadingModels) ? 0.5 : 1 }}
                  >
                    {isCapturing ? "ANALYZING..." : "BATTLE NOW ⚔️"}
                  </button>
@@ -152,7 +152,7 @@ export default function MogBattlePage({ params }: PageProps) {
                  <button 
                    onClick={() => setSelectedImage(null)}
                    disabled={isCapturing}
-                   style={{ width: '100%', color: 'rgba(255,255,255,0.4)', padding: '12px', fontWeight: 800, fontSize: '13px', fontFamily: 'Syne', border: 'none', background: 'none', cursor: 'pointer', opacity: isCapturing ? 0.2 : 1 }}
+                   style={{ width: '100%', color: 'rgba(255,255,255,0.4)', padding: '12px', fontWeight: 800, fontSize: '13px', fontFamily: 'Inter', border: 'none', background: 'none', cursor: 'pointer', opacity: isCapturing ? 0.2 : 1 }}
                  >
                    RETAKE PHOTO
                  </button>
