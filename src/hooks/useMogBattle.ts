@@ -234,20 +234,35 @@ export function useMogBattle(userId: string) {
       sessionStorage.setItem('mog_defender_score', JSON.stringify(defenderScore));
       sessionStorage.setItem('mog_challenger_score', JSON.stringify(challengerScore));
 
-      // Securely upload anonymous blob up to Supabase to serve the Native App Inbox
+      // Fetch the actual pending battle so we can UPDATE it, rather than creating a zombie duplicate natively
+      const { data: pendingBattle } = await supabase
+        .from('mog_battles')
+        .select('id, challenger_id')
+        .eq('challenger_username', userId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Securely upload anonymous opponent blob up to Supabase to serve the Native App Inbox
       if (localSnapshot) {
         try {
           const res = await fetch(localSnapshot);
           const blob = await res.blob();
-          const fileName = `${crypto.randomUUID()}.jpg`;
+          
+          // Use the validated bucket 'mog_battles' which we know the native app already set up as public.
+          // Store it in the same isolated folder structure it expects
+          const fileName = `${userId}/opponent_${crypto.randomUUID()}.jpg`;
           const { data: uploadData, error: uploadErr } = await supabase.storage
-            .from('mog_snapshots')
+            .from('mog_battles')
             .upload(fileName, blob, { contentType: 'image/jpeg' });
 
           if (!uploadErr && uploadData) {
              opponentImageUrl = supabase.storage
-               .from('mog_snapshots')
+               .from('mog_battles')
                .getPublicUrl(uploadData.path).data.publicUrl;
+          } else {
+             console.error("Opponent image upload dropped by Supabase", uploadErr);
           }
         } catch (e) {
           console.error("Image upload failed securely", e);
@@ -259,39 +274,55 @@ export function useMogBattle(userId: string) {
         .from('askout_users')
         .select('device_id')
         .eq('slug', userId.toLowerCase())
-        .single();
+        .maybeSingle();
         
-      const realChallengerId = userRow?.device_id || userId;
+      const realChallengerId = pendingBattle?.challenger_id || userRow?.device_id || userId;
 
-      // 4. Write to Supabase — matches native mog_battles schema exactly
+      // 4. Write to Supabase — Match native mog_battles schema
+      // If the native app generated a pending challenge, we MUST update it to avoid duplicate zombies.
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-      const { data, error: insertError } = await supabase
-        .from('mog_battles')
-        .insert({
-          id: crypto.randomUUID(),
-          challenger_id: realChallengerId,
+      const battleUpdates = {
           opponent_id: webUserId,
-          challenger_username: userId,
           opponent_username: 'Web User',
-          challenger_score: defenderScore.total / 10,  // web scores 0-100, scale to 0-10
-          opponent_score: challengerScore.total / 10,   // same
-          challenger_tier: scoreTier(defenderScore.total),
+          opponent_score: challengerScore.total / 10,   // web scales 0-100 to 0-10
           opponent_tier: scoreTier(challengerScore.total),
           opponent_image_url: opponentImageUrl,
           winner_id: defenderWins ? realChallengerId : webUserId,
           status: 'completed',
-          share_link: `askout.link/battle/mogbattle/${userId}`,
-          created_at: new Date().toISOString(),
-          expires_at: expiresAt,
-        })
-        .select()
-        .single();
+          updated_at: new Date().toISOString()
+      };
 
-      if (insertError) {
-        console.error("Failed to save battle result", insertError);
-        showToast("Failed to save result. Try again.");
-        setIsCapturing(false);
-        return;
+      let finalBattleId;
+
+      if (pendingBattle?.id) {
+        // UPDATE Existing
+        const { error: updateError } = await supabase
+           .from('mog_battles')
+           .update(battleUpdates)
+           .eq('id', pendingBattle.id);
+           
+        if (updateError) throw updateError;
+        finalBattleId = pendingBattle.id;
+      } else {
+        // FALLBACK: Insert brand new if they forced a battle on a generic link without natively creating it
+        const { data, error: insertError } = await supabase
+          .from('mog_battles')
+          .insert({
+            id: crypto.randomUUID(),
+            challenger_id: realChallengerId,
+            challenger_username: userId,
+            challenger_score: defenderScore.total / 10,  
+            challenger_tier: scoreTier(defenderScore.total),
+            share_link: `askout.link/battle/mogbattle/${userId}`,
+            created_at: new Date().toISOString(),
+            expires_at: expiresAt,
+            ...battleUpdates
+          })
+          .select('id')
+          .single();
+
+        if (insertError) throw insertError;
+        finalBattleId = data.id;
       }
 
       // 5. Increment aura if defender won using Egyptian sacred numerology (7 = Perfection/Hathor, 9 = The Ennead)
@@ -301,12 +332,12 @@ export function useMogBattle(userId: string) {
         await supabase.rpc('increment_aura', {
           p_user_id: userRow.device_id,
           p_amount: ritualAmount,
-          p_battle_id: data.id
+          p_battle_id: finalBattleId
         });
       }
 
       // 6. Return result ID instead of navigating directly
-      setBattleResult(data.id);
+      setBattleResult(finalBattleId);
 
     } catch (err) {
       console.error(err);
