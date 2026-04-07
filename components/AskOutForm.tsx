@@ -450,6 +450,70 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
         setImageBlurred(true); // Always start blurred on new upload
     };
 
+    // ── Optional media for text/askout messages ───────────────────────────────
+    // Lets senders enrich any message with a photo or voice note
+    const [optMediaType, setOptMediaType] = useState<'image' | 'audio' | null>(null);
+    const optFileInputRef = useRef<HTMLInputElement>(null);
+    const [optImageFile, setOptImageFile] = useState<File | null>(null);
+    const [optImagePreviewUrl, setOptImagePreviewUrl] = useState<string | null>(null);
+    const [optAudioBlob, setOptAudioBlob] = useState<Blob | null>(null);
+    const [optAudioUrl, setOptAudioUrl] = useState<string | null>(null);
+    const [optIsRecording, setOptIsRecording] = useState(false);
+    const [optRecordingTime, setOptRecordingTime] = useState(0);
+    const optMediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const optAudioChunksRef = useRef<Blob[]>([]);
+    const optTimerRef = useRef<number | null>(null);
+
+    const handleOptImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setOptImageFile(file);
+        setOptImagePreviewUrl(URL.createObjectURL(file));
+    };
+
+    const startOptRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            optMediaRecorderRef.current = new MediaRecorder(stream);
+            optAudioChunksRef.current = [];
+            optMediaRecorderRef.current.ondataavailable = (e) => {
+                if (e.data.size > 0) optAudioChunksRef.current.push(e.data);
+            };
+            optMediaRecorderRef.current.onstop = () => {
+                const blob = new Blob(optAudioChunksRef.current, { type: 'audio/webm' });
+                setOptAudioBlob(blob);
+                setOptAudioUrl(URL.createObjectURL(blob));
+                stream.getTracks().forEach(t => t.stop());
+            };
+            optMediaRecorderRef.current.start();
+            setOptIsRecording(true);
+            setOptRecordingTime(0);
+            optTimerRef.current = window.setInterval(() => {
+                setOptRecordingTime(prev => {
+                    if (prev >= 60) { stopOptRecording(); return 60; }
+                    return prev + 1;
+                });
+            }, 1000);
+        } catch {
+            setError('Microphone access required.');
+        }
+    };
+    const stopOptRecording = () => {
+        if (optMediaRecorderRef.current && optIsRecording) {
+            optMediaRecorderRef.current.stop();
+            setOptIsRecording(false);
+            if (optTimerRef.current) clearInterval(optTimerRef.current);
+        }
+    };
+    const clearOptMedia = () => {
+        setOptMediaType(null);
+        setOptImageFile(null);
+        setOptImagePreviewUrl(null);
+        setOptAudioBlob(null);
+        setOptAudioUrl(null);
+        setOptRecordingTime(0);
+    };
+
     const isSubmitDisabled = () => {
         if (isLoading) return true;
         if (config.type === 'text') return message.trim().length === 0;
@@ -521,7 +585,15 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                 let payload: Record<string, unknown> = {};
 
                 if (config.type === 'text') {
-                    payload = { message: slug === 'three-words' ? currentMsg.split(',').filter(Boolean).join(' · ') : currentMsg };
+                    let extra: Record<string, unknown> = {};
+                    if (optImageFile) {
+                        const { url, path } = await uploadMedia(optImageFile, 'image', username);
+                        extra = { media_url: url, media_path: path, media_type: 'image' };
+                    } else if (optAudioBlob) {
+                        const { url, path } = await uploadMedia(optAudioBlob, 'audio', username);
+                        extra = { media_url: url, media_path: path, media_type: 'audio', duration_ms: optRecordingTime * 1000 };
+                    }
+                    payload = { message: slug === 'three-words' ? currentMsg.split(',').filter(Boolean).join(' · ') : currentMsg, ...extra };
                 } else if (config.type === 'rating') {
                     payload = { message: `Rating: ${currentRating}/10`, score: currentRating };
                 } else if (config.type === 'askout') {
@@ -731,6 +803,72 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                                             maxLength={500}
                                         />
                                     </div>
+                                </div>
+                            )}
+
+                            {/* ── Optional media attachment for text / askout ── */}
+                            {(config.type === 'text' || config.type === 'askout') && slug !== 'three-words' && (
+                                <div className="ao-opt-media-section">
+                                    {/* Hidden inputs */}
+                                    <input ref={optFileInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleOptImageSelect} />
+
+                                    {/* No media yet — show two pill buttons */}
+                                    {!optMediaType && (
+                                        <div className="ao-opt-media-pills">
+                                            <button
+                                                type="button"
+                                                className="ao-opt-pill"
+                                                onClick={() => { setOptMediaType('image'); optFileInputRef.current?.click(); }}
+                                            >
+                                                <span>📷</span> Add photo
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="ao-opt-pill"
+                                                onClick={() => setOptMediaType('audio')}
+                                            >
+                                                <span>🎙️</span> Voice note
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Image selected */}
+                                    {optMediaType === 'image' && optImagePreviewUrl && (
+                                        <div className="ao-opt-preview">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={optImagePreviewUrl} alt="Attachment" className="ao-opt-img-thumb" />
+                                            <button type="button" className="ao-opt-clear" onClick={clearOptMedia}>✕ Remove</button>
+                                        </div>
+                                    )}
+                                    {optMediaType === 'image' && !optImagePreviewUrl && (
+                                        <div className="ao-opt-preview">
+                                            <span className="ao-opt-pending">📷 Tap to choose a photo</span>
+                                            <button type="button" className="ao-opt-clear" onClick={clearOptMedia}>✕</button>
+                                        </div>
+                                    )}
+
+                                    {/* Audio recording */}
+                                    {optMediaType === 'audio' && !optAudioUrl && (
+                                        <div className="ao-opt-preview">
+                                            <button
+                                                type="button"
+                                                className={`ao-opt-rec-btn${optIsRecording ? ' recording' : ''}`}
+                                                onMouseDown={(e) => { e.preventDefault(); startOptRecording(); }}
+                                                onMouseUp={(e) => { e.preventDefault(); stopOptRecording(); }}
+                                                onTouchStart={(e) => { e.preventDefault(); startOptRecording(); }}
+                                                onTouchEnd={(e) => { e.preventDefault(); stopOptRecording(); }}
+                                            >
+                                                {optIsRecording ? `🔴 0:${optRecordingTime.toString().padStart(2, '0')}` : '🎙️ Hold to record'}
+                                            </button>
+                                            <button type="button" className="ao-opt-clear" onClick={clearOptMedia}>✕</button>
+                                        </div>
+                                    )}
+                                    {optMediaType === 'audio' && optAudioUrl && (
+                                        <div className="ao-opt-preview">
+                                            <audio controls src={optAudioUrl} className="ao-audio-player" />
+                                            <button type="button" className="ao-opt-clear" onClick={clearOptMedia}>✕</button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

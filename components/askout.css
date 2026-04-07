@@ -1040,3 +1040,112 @@
     background: color-mix(in srgb, var(--theme-accent) 20%, rgba(255, 255, 255, 0.1));
     color: #fff;
 }
+
+/* ─── Optional media attachment (text / askout forms) ─── */
+.ao-opt-media-section {
+    width: 100%;
+    margin-top: 12px;
+}
+
+.ao-opt-media-pills {
+    display: flex;
+    gap: 8px;
+}
+
+.ao-opt-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+    color: rgba(255, 255, 255, 0.55);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ao-opt-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.ao-opt-pill:active {
+    transform: scale(0.97);
+}
+
+.ao-opt-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+}
+
+.ao-opt-img-thumb {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.ao-opt-pending {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.ao-opt-rec-btn {
+    flex: 1;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.ao-opt-rec-btn.recording {
+    background: rgba(255, 60, 60, 0.1);
+    border-color: rgba(255, 60, 60, 0.3);
+    color: #ff6060;
+    animation: ao-pulse 1s infinite;
+}
+
+.ao-opt-clear {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    transition: color 0.15s, background 0.15s;
+    line-height: 1;
+}
+
+.ao-opt-clear:hover {
+    color: #ff8080;
+    background: rgba(255, 80, 80, 0.1);
+}
+
+.ao-opt-preview .ao-audio-player {
+    flex: 1;
+    min-width: 0;
+}
