@@ -329,11 +329,35 @@ export function useMogBattle(userId: string) {
       if (defenderWins && userRow?.device_id) {
         const ritualAmount = Math.random() > 0.5 ? 7 : 9;
         
-        await supabase.rpc('increment_aura', {
-          p_user_id: userRow.device_id,
-          p_amount: ritualAmount,
-          p_battle_id: finalBattleId
-        });
+        try {
+          // Attempt the official comprehensive RPC first (handles ledger + profiles)
+          await supabase.rpc('increment_aura', {
+            p_user_id: userRow.device_id,
+            p_amount: ritualAmount,
+            p_battle_id: finalBattleId
+          });
+        } catch (rpcErr) {
+          console.warn("RPC increment_aura failed (likely no profile for anon user). Attempting direct askout_users injection.", rpcErr);
+        }
+
+        // GUARANTEE the aura is added to the exact handle (slug) natively
+        try {
+          // Fetch current aura
+          const { data: currentAskoutUser } = await supabase
+             .from('askout_users')
+             .select('aura_balance')
+             .eq('device_id', userRow.device_id)
+             .maybeSingle();
+
+          if (currentAskoutUser) {
+             await supabase
+                .from('askout_users')
+                .update({ aura_balance: (currentAskoutUser.aura_balance || 0) + ritualAmount })
+                .eq('device_id', userRow.device_id);
+          }
+        } catch (directErr) {
+          console.error("Direct Askout aura increment failed", directErr);
+        }
       }
 
       // 6. Return result ID instead of navigating directly
