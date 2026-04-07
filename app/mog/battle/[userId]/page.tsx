@@ -26,6 +26,7 @@ export default function MogBattlePage({ params }: PageProps) {
     toastMessage,
     capture,
     battleResult,
+    challengerAvatarUrl,
   } = useMogBattle(userId);
 
   useEffect(() => {
@@ -82,10 +83,22 @@ export default function MogBattlePage({ params }: PageProps) {
           </button>
         </div>
 
+        {/* Challenger Info */}
+        {challengerAvatarUrl && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px', marginTop: '-12px' }}>
+             <div style={{ width: '72px', height: '72px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.1)', marginBottom: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
+                 <img src={challengerAvatarUrl} crossOrigin="anonymous" alt="Challenger" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+             </div>
+             <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: '0.05em' }}>
+               {userId.toUpperCase()} CHALLENGES YOU
+             </span>
+          </div>
+        )}
+
         {/* Header Title */}
         <div style={{ textAlign: 'center', padding: '0 24px', marginBottom: '20px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: 800, fontFamily: 'Inter', letterSpacing: '-0.04em', lineHeight: 1.1 }}>
-            ARE YOU<br/><span style={{ color: '#FF2D55' }}>MOGGING?</span>
+            ARE YOU<br/><span style={{ color: '#00FFFF' }}>MOGGING?</span>
           </h1>
         </div>
 

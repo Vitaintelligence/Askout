@@ -52,28 +52,55 @@ export function useMogBattle(userId: string) {
     // Proactively fetch challenger avatar
     async function fetchAvatar() {
       try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('user_key, avatar_url')
-          .eq('username', userId)
-          .single();
+        let avatarUrl = null;
 
-        let avatarUrl = profile?.avatar_url;
+        // 1. Try to get the specific image they just took for a mog battle
+        const { data: latestBattle } = await supabase
+          .from('mog_battles')
+          .select('challenger_image_url')
+          .eq('challenger_username', userId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-        if (!avatarUrl && profile?.user_key) {
-          const { data: userProfile } = await supabase
-            .from('user_profiles')
-            .select('avatar_url')
-            .eq('user_id', profile.user_key)
-            .single();
-          avatarUrl = userProfile?.avatar_url;
+        if (latestBattle?.challenger_image_url) {
+          avatarUrl = latestBattle.challenger_image_url;
+        }
+
+        // 2. Fallbacks
+        if (!avatarUrl) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('user_key, avatar_url')
+            .eq('username', userId)
+            .maybeSingle();
+
+          avatarUrl = profile?.avatar_url;
+
+          if (!avatarUrl && profile?.user_key) {
+             const { data: rmProfile } = await supabase
+               .from('rate_me_profiles')
+               .select('last_scan_image_url')
+               .eq('anonymous_id', profile.user_key)
+               .maybeSingle();
+             avatarUrl = rmProfile?.last_scan_image_url;
+          }
+
+          if (!avatarUrl && profile?.user_key) {
+            const { data: userProfile } = await supabase
+              .from('user_profiles')
+              .select('avatar_url')
+              .eq('user_id', profile.user_key)
+              .maybeSingle();
+            avatarUrl = userProfile?.avatar_url;
+          }
         }
 
         if (avatarUrl) {
           setChallengerAvatarUrl(avatarUrl);
         }
       } catch (e) {
-        console.error("Failed to fetch challenger avatar");
+        console.error("Failed to fetch challenger avatar", e);
       }
     }
     if (userId) fetchAvatar();
@@ -93,30 +120,43 @@ export function useMogBattle(userId: string) {
         .from('askout_users')
         .select('device_id')
         .eq('slug', userId.toLowerCase())
-        .single();
+        .maybeSingle();
 
       const deviceId = askoutUser?.device_id;
       let avatarUrl = null;
 
-      if (deviceId) {
-        // Look up image in rate_me_profiles first (most accurate for mogs)
+      // FIRST: Prioritize the specific photo they submitted for this explicit Mog Battle natively.
+      const { data: latestBattle } = await supabase
+        .from('mog_battles')
+        .select('challenger_image_url')
+        .eq('challenger_username', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestBattle?.challenger_image_url) {
+        avatarUrl = latestBattle.challenger_image_url;
+      }
+
+      if (!avatarUrl && deviceId) {
+        // Look up image in rate_me_profiles first (scan backup)
         const { data: rmProfile } = await supabase
           .from('rate_me_profiles')
           .select('last_scan_image_url')
           .eq('anonymous_id', deviceId)
-          .single();
+          .maybeSingle();
           
         if (rmProfile?.last_scan_image_url) {
           avatarUrl = rmProfile.last_scan_image_url;
         }
 
-        // Fallback to profiles/user_profiles via Auth ID
+        // Fallback to profiles
         if (!avatarUrl) {
           const { data: profile } = await supabase
             .from('profiles')
             .select('avatar_url')
             .eq('user_key', deviceId)
-            .single();
+            .maybeSingle();
           if (profile?.avatar_url) avatarUrl = profile.avatar_url;
         }
         
@@ -125,7 +165,7 @@ export function useMogBattle(userId: string) {
             .from('user_profiles')
             .select('avatar_url')
             .eq('user_id', deviceId)
-            .single();
+            .maybeSingle();
           if (userProfile?.avatar_url) avatarUrl = userProfile.avatar_url;
         }
       }
