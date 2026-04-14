@@ -245,29 +245,8 @@ export function useMogBattle(userId: string) {
         .maybeSingle();
 
       // Securely upload anonymous opponent blob up to Supabase to serve the Native App Inbox
-      if (localSnapshot) {
-        try {
-          const res = await fetch(localSnapshot);
-          const blob = await res.blob();
-          
-          // Use the validated bucket 'mog_battles' which we know the native app already set up as public.
-          // Store it in the same isolated folder structure it expects
-          const fileName = `${userId}/opponent_${crypto.randomUUID()}.jpg`;
-          const { data: uploadData, error: uploadErr } = await supabase.storage
-            .from('mog_battles')
-            .upload(fileName, blob, { contentType: 'image/jpeg' });
-
-          if (!uploadErr && uploadData) {
-             opponentImageUrl = supabase.storage
-               .from('mog_battles')
-               .getPublicUrl(uploadData.path).data.publicUrl;
-          } else {
-             console.error("Opponent image upload dropped by Supabase", uploadErr);
-          }
-        } catch (e) {
-          console.error("Image upload failed securely", e);
-        }
-      }
+      // [REMOVED IN SIMPLIFICATION UPDATE] We no longer save or upload the opposer's photo.
+      // The native app owner will just receive the score without seeing their image.
 
       // Find defender's true UUID (user_key / device_id)
       const { data: userRow } = await supabase

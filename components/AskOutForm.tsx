@@ -283,7 +283,9 @@ function collectClientMetadata() {
 
 async function uploadMedia(blob: Blob, mediaType: 'audio' | 'image', recipientSlug: string) {
     const form = new FormData();
-    const ext = blob.type.split('/')[1] ?? (mediaType === 'audio' ? 'webm' : 'jpg');
+    // Strip codec suffix (e.g. "audio/webm;codecs=opus" → "webm") for clean filenames
+    const normalisedMime = blob.type.split(';')[0].trim();
+    const ext = normalisedMime.split('/')[1] ?? (mediaType === 'audio' ? 'webm' : 'jpg');
     form.append('file', blob, `upload.${ext}`);
     form.append('media_type', mediaType);
     form.append('recipient_slug', recipientSlug);
@@ -809,8 +811,8 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                             {/* ── Optional media attachment for text / askout ── */}
                             {(config.type === 'text' || config.type === 'askout') && slug !== 'three-words' && (
                                 <div className="ao-opt-media-section">
-                                    {/* Hidden inputs */}
-                                    <input ref={optFileInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleOptImageSelect} />
+                                    {/* Hidden inputs — no capture= attribute so users can choose gallery OR camera */}
+                                    <input ref={optFileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleOptImageSelect} />
 
                                     {/* No media yet — show two pill buttons */}
                                     {!optMediaType && (
@@ -847,18 +849,15 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                                         </div>
                                     )}
 
-                                    {/* Audio recording */}
+                                    {/* Audio recording — tap to start, tap again to stop */}
                                     {optMediaType === 'audio' && !optAudioUrl && (
                                         <div className="ao-opt-preview">
                                             <button
                                                 type="button"
                                                 className={`ao-opt-rec-btn${optIsRecording ? ' recording' : ''}`}
-                                                onMouseDown={(e) => { e.preventDefault(); startOptRecording(); }}
-                                                onMouseUp={(e) => { e.preventDefault(); stopOptRecording(); }}
-                                                onTouchStart={(e) => { e.preventDefault(); startOptRecording(); }}
-                                                onTouchEnd={(e) => { e.preventDefault(); stopOptRecording(); }}
+                                                onClick={() => { optIsRecording ? stopOptRecording() : startOptRecording(); }}
                                             >
-                                                {optIsRecording ? `🔴 0:${optRecordingTime.toString().padStart(2, '0')}` : '🎙️ Hold to record'}
+                                                {optIsRecording ? `🔴 Stop — 0:${optRecordingTime.toString().padStart(2, '0')}` : '🎙️ Tap to record'}
                                             </button>
                                             <button type="button" className="ao-opt-clear" onClick={clearOptMedia}>✕</button>
                                         </div>
@@ -893,7 +892,7 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                             {/* ── Image Capture ── */}
                             {config.type === 'image' && (
                                 <div className="ao-image-capture-wrap">
-                                    <input type="file" accept="image/*" capture="environment" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
+                                    <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
                                     {imagePreviewUrl ? (
                                         <div className="ao-image-preview">
                                             <div
@@ -957,13 +956,10 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                                     {!audioUrl ? (
                                         <button
                                             className={`ao-ngl-media-stub ${isRecording ? 'recording' : ''}`}
-                                            onMouseDown={(e) => { e.preventDefault(); startRecording(); }}
-                                            onMouseUp={(e) => { e.preventDefault(); stopRecording(); }}
-                                            onTouchStart={(e) => { e.preventDefault(); startRecording(); }}
-                                            onTouchEnd={(e) => { e.preventDefault(); stopRecording(); }}
+                                            onClick={(e) => { e.preventDefault(); isRecording ? stopRecording() : startRecording(); }}
                                         >
                                             <span className={`ao-media-icon ${isRecording ? 'pulse' : ''}`}>{isRecording ? '🔴' : '🎙️'}</span>
-                                            <span className="ao-recording-time">{isRecording ? `Recording... 0:${recordingTime.toString().padStart(2, '0')}` : 'Hold to record voice note'}</span>
+                                            <span className="ao-recording-time">{isRecording ? `Recording... 0:${recordingTime.toString().padStart(2, '0')} — tap to stop` : 'Tap to start recording'}</span>
                                         </button>
                                     ) : (
                                         <div className="ao-audio-preview">
@@ -991,7 +987,7 @@ export default function AskOutForm({ username, slug, promptText }: AskOutFormPro
                 {fomoCount && (
                     <div className="ao-ngl-fomo-section">
                         <span className="ao-ngl-fomo-text">🔥 {fomoCount} users tapped the button</span>
-                        <a href="https://glowrizz.club" className="ao-ngl-fomo-cta" target="_blank" rel="noopener noreferrer">Get your link now!</a>
+                        <a href="https://app.askout.link" className="ao-ngl-fomo-cta" target="_blank" rel="noopener noreferrer">Get your link now!</a>
                     </div>
                 )}
 
