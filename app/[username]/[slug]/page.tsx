@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import AskOutForm from '@/components/AskOutForm';
 
 interface Props {
@@ -19,7 +20,6 @@ export default async function UsernameSlugPage({ params, searchParams }: Props) 
 
     // Special redirect for mog-battle links
     if (slug === 'mog-battle') {
-        const { redirect } = await import('next/navigation');
         redirect(`/mogbattle/${username}`);
     }
 
