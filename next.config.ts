@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
         return [
             {
                 source: '/ref/:code',
-                destination: 'https://glowrizz.club',
+                destination: 'https://glowrizz.club?ref=:code',
                 permanent: false,
             },
         ];
