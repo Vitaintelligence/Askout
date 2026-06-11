@@ -10,6 +10,15 @@ const nextConfig: NextConfig = {
             },
         ];
     },
+    async redirects() {
+        return [
+            {
+                source: '/ref/:code',
+                destination: 'https://glowrizz.club',
+                permanent: false,
+            },
+        ];
+    },
 };
 
 export default nextConfig;
